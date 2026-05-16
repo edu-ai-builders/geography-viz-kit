@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>影子朝向与长短 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep:#070a13;--bg-panel:rgba(12,17,28,0.82);--bg-panel-solid:#0c111c;
+    --line:rgba(255,255,255,0.08);--line-strong:rgba(255,255,255,0.18);
+    --text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;
+    --accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;
+    --font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .slider-row{margin-bottom:14px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-label{font-size:12px;color:var(--text-secondary);}
+  .slider-value{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);font-weight:500;}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:2px;background:var(--line-strong);outline:none;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent-warm);border-radius:50%;cursor:pointer;border:2px solid var(--bg-deep);box-shadow:0 0 0 1px var(--accent-warm);}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .btn{padding:9px 10px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:12px;cursor:pointer;border-radius:2px;transition:all .15s ease;}
+  .btn:hover{border-color:var(--accent-warm);color:var(--text-primary);}
+  .btn.primary{background:var(--accent-warm);color:#1a1208;border-color:var(--accent-warm);font-weight:500;}
+  .formula-box{background:rgba(244,168,83,.06);border:1px solid rgba(244,168,83,.2);border-radius:2px;padding:12px;margin-top:8px;}
+  .formula-text{font-family:var(--font-mono);font-size:13px;color:var(--accent-warm);text-align:center;margin-bottom:5px;}
+  .formula-sub{font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#0a1220 0%,#050811 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay-body strong{color:var(--text-primary);font-weight:500;}
+  .top-badge{position:absolute;top:24px;right:24px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:.2em;text-transform:uppercase;z-index:5;}
+  .instruction{position:absolute;bottom:20px;right:24px;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.12em;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:28px 22px;}
+  .panel-right::-webkit-scrollbar{width:4px;}
+  .data-title{font-family:var(--font-display);font-size:18px;font-weight:500;margin-bottom:18px;letter-spacing:-.01em;}
+  .data-block{padding:14px 0;border-top:1px solid var(--line);}
+  .data-block:first-of-type{border-top:none;padding-top:0;}
+  .data-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;font-size:12px;}
+  .data-label{color:var(--text-dim);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;}
+  .data-value{color:var(--text-primary);font-family:var(--font-mono);font-weight:500;font-size:13px;}
+  .data-value.accent{color:var(--accent-warm);}.data-value.hot{color:var(--accent-hot);}.data-value.cool{color:var(--accent-cool);}
+  .big-num{font-family:var(--font-mono);font-size:36px;font-weight:600;color:var(--accent-cool);text-align:center;margin:12px 0 4px;letter-spacing:-.02em;}
+  .big-label{font-size:11px;color:var(--text-dim);text-align:center;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px;}
+  @media(max-width:1200px){#app{grid-template-columns:300px 1fr 240px;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-sub">Geographic Time · Module 04</div>
+      <h1 class="brand-title">影子<em>朝向与长短</em></h1>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;line-height:1.6;">L = h / tan(H) · 正午影子方向规律</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-select">
+        <option value="length">影长公式推导</option>
+        <option value="direction">朝向规律</option>
+        <option value="conflict">认知冲突：零影长</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">观测纬度 φ</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="lat-name">北京 39.9°N</span>
+          <span class="slider-value" id="lat-val">+39.9°</span>
+        </div>
+        <input type="range" id="lat" min="-90" max="90" value="39.9" step="0.1" />
+      </div>
+      <div class="btn-row">
+        <button class="btn" data-lat="39.9">北京</button>
+        <button class="btn" data-lat="23.4">北回归线</button>
+        <button class="btn" data-lat="0">赤道</button>
+        <button class="btn" data-lat="-23.4">南回归线</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">日期</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="doy-name">春分</span>
+          <span class="slider-value" id="decl-val">δ = +0.0°</span>
+        </div>
+        <input type="range" id="doy" min="0" max="365" value="80" />
+      </div>
+      <div class="btn-row">
+        <button class="btn" data-doy="80">春分</button>
+        <button class="btn" data-doy="172">夏至</button>
+        <button class="btn" data-doy="266">秋分</button>
+        <button class="btn" data-doy="355">冬至</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">标杆高度 h</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">标杆高度</span>
+          <span class="slider-value" id="pole-val">1.0 m</span>
+        </div>
+        <input type="range" id="pole-h" min="0.2" max="3" value="1" step="0.1" />
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="formula-box">
+        <div class="formula-text" id="formula-live">L = h / tan(H)</div>
+        <div class="formula-sub">
+          L = 影子长度（m）<br>
+          h = 标杆高度（m）<br>
+          H = 正午太阳高度角<br>
+          H = 0° → 影子无限长（太阳在地平线）<br>
+          H = 90° → 影子长度为零
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="btn-row">
+        <button class="btn primary" id="btn-reset">重置视角</button>
+        <button class="btn" id="btn-top">俯视</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay">
+      <div class="kp-overlay-header">
+        <div class="kp-overlay-title">知识点解读</div>
+        <button class="kp-overlay-close" id="kp-close">—</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body"></div>
+    </div>
+    <div class="top-badge">geo · shadow · L = h/tan(H)</div>
+    <div class="instruction">左键拖拽 · 滚轮缩放</div>
+  </main>
+
+  <aside class="panel-right">
+    <h2 class="data-title">影子数据</h2>
+    <div class="data-block">
+      <div class="big-num" id="shadow-len">—</div>
+      <div class="big-label">正午影长 L (m)</div>
+      <div class="data-row"><span class="data-label">太阳高度角 H</span><span class="data-value accent" id="d-H">—</span></div>
+      <div class="data-row"><span class="data-label">标杆高度 h</span><span class="data-value" id="d-h">1.0 m</span></div>
+      <div class="data-row"><span class="data-label">直射纬度 δ</span><span class="data-value hot" id="d-decl">—</span></div>
+      <div class="data-row"><span class="data-label">观测纬度 φ</span><span class="data-value cool" id="d-lat">—</span></div>
+    </div>
+
+    <div class="data-block">
+      <div class="data-label" style="margin-bottom:10px;">影子朝向</div>
+      <div class="data-row"><span class="data-label">正午朝向</span><span class="data-value" id="d-dir">—</span></div>
+      <div class="data-row"><span class="data-label">判断规则</span><span class="data-value" style="font-size:11px;text-align:right;max-width:160px;" id="d-rule">—</span></div>
+    </div>
+
+    <div class="data-block">
+      <div class="data-label" style="margin-bottom:8px;">关键事实（认知冲突）</div>
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+        <div>赤道春/秋分正午：H=90°<br><span style="color:var(--accent-warm)">→ 影长为零，无影子</span></div>
+        <br>
+        <div>南半球正午影朝正北<br><span style="color:var(--accent-cool)">→ 颠覆"影子朝北"误区</span></div>
+        <br>
+        <div>北回归线以北：正午影永远朝北<br>南回归线以南：正午影永远朝南<br>两回归线之间：随季节变朝向</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+
+const KP_DOCS = {
+  'length': `<strong>影长公式</strong>：L = h / tan(H)，其中 L 是影长，h 是标杆高度，H 是正午太阳高度角。几何关系：标杆、影子、太阳光线构成一个直角三角形，标杆为竖直边（h），影子为水平边（L），光线为斜边，H 为光线与地平面的夹角，所以 tan(H) = h/L，即 L = h/tan(H)。H 越大（太阳越高），影子越短；H → 0°，影子趋于无穷长；<strong>H = 90° 时影长为零</strong>（太阳直射该地，标杆无影）。`,
+  'direction': `<strong>正午影子朝向规律</strong>：正午时太阳在子午线上（最高点），影子方向与太阳方向相反，必在子午线上，且<strong>背向太阳</strong>。<br><br>判断规则：若太阳在观测者正南（φ > δ），影子朝<strong>正北</strong>；若太阳在正北（φ < δ，太阳直射点在观测者以北），影子朝<strong>正南</strong>；φ = δ 时（太阳直射该地），H = 90°，无影子。<br><br><strong>南半球所有地区</strong>正午太阳必在正北，影子必朝正南。`,
+  'conflict': `<strong>认知冲突：零影长（赤道春秋分）</strong><br><br>把纬度设为 0°（赤道），日期设为春分（δ=0°）：<br>H = 90° − |0° − 0°| = <strong>90°</strong><br>L = h / tan(90°) = <strong>0</strong><br><br>此时太阳直接在头顶，标杆在地面上没有影子。这是地球上少数可能发生的天文现象。每年有两次（春分/秋分），仅在赤道上。回归线上有一次（对应直射日）。北回归线以北或南回归线以南的地区，<strong>永远不会出现零影</strong>。`,
+};
+
+// THREE SETUP
+const canvas = document.getElementById('three-canvas');
+const wrap = canvas.parentElement;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, wrap.clientWidth / wrap.clientHeight, 0.01, 100);
+camera.position.set(4, 3, 4);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+renderer.setClearColor(0x050811, 1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+labelRenderer.domElement.style.cssText = 'position:absolute;top:0;pointer-events:none;';
+wrap.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 1; controls.maxDistance = 20;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(wrap.clientWidth, wrap.clientHeight), 0.25, 0.5, 0.9);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+// Lighting
+const ambLight = new THREE.AmbientLight(0xffffff, 0.15);
+scene.add(ambLight);
+const sunLight = new THREE.DirectionalLight(0xffe9c7, 2.0);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 30;
+sunLight.shadow.camera.left = -6;
+sunLight.shadow.camera.right = 6;
+sunLight.shadow.camera.top = 6;
+sunLight.shadow.camera.bottom = -6;
+sunLight.shadow.bias = -0.001;
+scene.add(sunLight);
+
+// Ground plane (tangent plane at observation point)
+const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a2535, side: THREE.DoubleSide });
+const groundMesh = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), groundMat);
+groundMesh.receiveShadow = true;
+scene.add(groundMesh);
+
+// Ground grid
+const gridHelper = new THREE.GridHelper(8, 16, 0x1e2d42, 0x1e2d42);
+scene.add(gridHelper);
+
+// Compass rose labels
+function makeLabel2D(text, color) {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `color:${color};font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-shadow:0 0 8px rgba(0,0,0,.9);pointer-events:none;`;
+  return new CSS2DObject(el);
+}
+const compassN = makeLabel2D('N 北', '#7dc48a'); compassN.position.set(0, 0.1, -3.5); scene.add(compassN);
+const compassS = makeLabel2D('S 南', '#e85d4a'); compassS.position.set(0, 0.1, 3.5); scene.add(compassS);
+const compassE = makeLabel2D('E 东', '#f4a853'); compassE.position.set(3.5, 0.1, 0); scene.add(compassE);
+const compassW = makeLabel2D('W 西', '#6db3d9'); compassW.position.set(-3.5, 0.1, 0); scene.add(compassW);
+
+// N-S axis line
+const nsLine = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0.01,-4),new THREE.Vector3(0,0.01,4)]),
+  new THREE.LineBasicMaterial({color:0x7dc48a,transparent:true,opacity:0.25})
+);
+scene.add(nsLine);
+
+// Pole (vertical stick)
+const poleMat = new THREE.MeshLambertMaterial({ color: 0xe8ecf3 });
+const poleMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1, 12), poleMat);
+poleMesh.castShadow = true;
+poleMesh.position.set(0, 0.5, 0);
+scene.add(poleMesh);
+
+// Sun sphere (to show direction)
+const sunMesh2 = new THREE.Mesh(new THREE.SphereGeometry(0.12,16,16), new THREE.MeshBasicMaterial({color:0xffe9c7}));
+scene.add(sunMesh2);
+const sunGlow2 = new THREE.Mesh(new THREE.SphereGeometry(0.22,16,16), new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,side:THREE.BackSide,
+  vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`varying vec3 vN;void main(){float r=pow(1.-abs(vN.z),2.5);gl_FragColor=vec4(1.,.85,.55,r*.6);}`,
+}));
+sunMesh2.add(sunGlow2);
+
+// Shadow line (dynamic)
+const shadowMat = new THREE.LineBasicMaterial({ color: 0x6db3d9, transparent: true, opacity: 0.9 });
+const shadowGeo = new THREE.BufferGeometry();
+const shadowLine = new THREE.Line(shadowGeo, shadowMat);
+scene.add(shadowLine);
+
+// Shadow tip dot
+const shadowTip = new THREE.Mesh(new THREE.SphereGeometry(0.06,12,12), new THREE.MeshBasicMaterial({color:0x6db3d9}));
+scene.add(shadowTip);
+
+// Shadow length line label
+const shadowLabel = makeLabel2D('', '#6db3d9');
+scene.add(shadowLabel);
+
+// Sun ray line (from sun to pole top)
+const sunRayGeo = new THREE.BufferGeometry();
+const sunRayLine = new THREE.Line(sunRayGeo, new THREE.LineBasicMaterial({color:0xf4a853,transparent:true,opacity:0.7}));
+scene.add(sunRayLine);
+
+// H angle label near pole top
+const hAngleLabel = makeLabel2D('', '#f4a853');
+scene.add(hAngleLabel);
+
+// State
+const state = { lat: 39.9, doy: 80, poleH: 1.0 };
+
+function computeDecl(doy) { return 23.44 * Math.sin(2*Math.PI*(doy+284)/365.25); }
+function computeH(lat, decl) { return Math.max(0, 90 - Math.abs(lat - decl)); }
+function doyLabel(doy) {
+  const s=[{doy:80,n:'春分'},{doy:172,n:'夏至'},{doy:266,n:'秋分'},{doy:355,n:'冬至'}];
+  for(const x of s){if(Math.abs(doy-x.doy)<4)return x.n;}return'doy '+Math.round(doy);
+}
+function shadowDirection(lat, decl) {
+  if (Math.abs(lat - decl) < 0.5) return { dir: '无（正头顶）', rule: 'H=90°，太阳直射' };
+  if (lat > decl) return { dir: '正北 ↑', rule: 'φ > δ，太阳在正南，影指正北' };
+  return { dir: '正南 ↓', rule: 'φ < δ，太阳在正北，影指正南' };
+}
+
+// Controls
+const kpSelect = document.getElementById('kp-select');
+const kpBody = document.getElementById('kp-body');
+const kpOverlay = document.getElementById('kp-overlay');
+function updateKP(){kpBody.innerHTML=KP_DOCS[kpSelect.value];}
+kpSelect.addEventListener('change',updateKP);updateKP();
+document.getElementById('kp-close').addEventListener('click',()=>{kpOverlay.style.display=kpOverlay.style.display==='none'?'':'none';});
+
+const latInput=document.getElementById('lat');
+latInput.addEventListener('input',()=>{state.lat=+latInput.value;});
+document.querySelectorAll('[data-lat]').forEach(b=>b.addEventListener('click',()=>{state.lat=+b.dataset.lat;latInput.value=state.lat;}));
+
+const doyInput=document.getElementById('doy');
+doyInput.addEventListener('input',()=>{state.doy=+doyInput.value;});
+document.querySelectorAll('[data-doy]').forEach(b=>b.addEventListener('click',()=>{state.doy=+b.dataset.doy;doyInput.value=state.doy;}));
+
+const poleHInput=document.getElementById('pole-h');
+const poleValEl=document.getElementById('pole-val');
+poleHInput.addEventListener('input',()=>{state.poleH=+poleHInput.value;poleValEl.textContent=state.poleH.toFixed(1)+' m';});
+
+document.getElementById('btn-reset').addEventListener('click',()=>{camera.position.set(4,3,4);controls.target.set(0,0,0);controls.update();});
+document.getElementById('btn-top').addEventListener('click',()=>{camera.position.set(0,8,0.01);controls.target.set(0,0,0);controls.update();});
+
+function animate() {
+  requestAnimationFrame(animate);
+  const { lat, doy, poleH } = state;
+  const decl = computeDecl(doy);
+  const H = computeH(lat, decl);
+  const HR = H * DEG;
+
+  // Pole: scale to poleH (visual units: 1 unit = 1 m for simplicity)
+  poleMesh.scale.y = poleH;
+  poleMesh.position.y = poleH / 2;
+  const poleTop = new THREE.Vector3(0, poleH, 0);
+
+  // Sun direction at noon:
+  // Ground plane is XZ. N = +Z direction (towards camera... no).
+  // Convention: N = -Z, S = +Z, E = +X, W = -X.
+  // Wait — compass labels: N at (0,0,-3.5) = -Z. So N = -Z direction. S = +Z. E = +X. W = -X.
+  // At solar noon, sun is due south (for φ>δ, N hemisphere): in +Z direction from observer.
+  // But sun is above ground by angle H.
+  // Sun direction (from observer toward sun): in the S direction elevated by H.
+  // For φ>δ (shadow north): sun is in +Z direction (south), elevated H.
+  // sunDir = (0, sin(H), cos(H)) * sign — normalized unit vector toward sun.
+  // But sign: if lat>decl, sun is in south (+Z side), sunDir_horiz = +Z.
+  // if lat<decl, sun is in north (-Z side), sunDir_horiz = -Z.
+  const southSign2 = lat > decl ? 1 : (lat < decl ? -1 : 0);
+  let sunHoriz;
+  if (Math.abs(lat - decl) < 0.3) {
+    // Sun directly overhead
+    sunHoriz = new THREE.Vector3(0, 0, 0);
+  } else {
+    sunHoriz = new THREE.Vector3(0, 0, southSign2);
+  }
+  const sunDirLocal = new THREE.Vector3(
+    sunHoriz.x * Math.cos(HR),
+    Math.sin(HR),
+    sunHoriz.z * Math.cos(HR)
+  ).normalize();
+
+  // Sun position: place sun sphere far away in sunDir
+  const sunDist = 7;
+  sunMesh2.position.copy(sunDirLocal.clone().multiplyScalar(sunDist));
+  sunLight.position.copy(sunDirLocal.clone().multiplyScalar(10));
+
+  // Shadow: project pole top along NEGATIVE sun direction onto ground (y=0)
+  // Ray: poleTop + t * (-sunDir), find t such that y=0: poleH + t*(-sin(H)) = 0 → t = poleH/sin(H)
+  let shadowLength = 0;
+  let shadowTipPos = new THREE.Vector3(0, 0.01, 0);
+  if (H > 0.5) {
+    const t = poleH / Math.sin(HR);
+    shadowTipPos = new THREE.Vector3(
+      poleTop.x + t * (-sunDirLocal.x),
+      0.01,
+      poleTop.z + t * (-sunDirLocal.z)
+    );
+    shadowLength = Math.sqrt(shadowTipPos.x**2 + shadowTipPos.z**2);
+  } else {
+    // H ≈ 0: shadow is "infinite" (sun on horizon). Cap at 6m visual.
+    shadowLength = Infinity;
+    shadowTipPos = new THREE.Vector3(0, 0.01, -southSign2 * 6);
+  }
+
+  // Update shadow geometry
+  const shadowPts = [new THREE.Vector3(0, 0.01, 0), shadowTipPos];
+  shadowGeo.setFromPoints(shadowPts);
+  shadowTip.position.copy(shadowTipPos);
+
+  // Sun ray line: from sun to pole top
+  const sunRayPts = [sunMesh2.position.clone(), poleTop];
+  sunRayGeo.setFromPoints(sunRayPts);
+
+  // H angle label
+  hAngleLabel.position.set(sunDirLocal.x * 0.6, poleH + 0.15, sunDirLocal.z * 0.6);
+  hAngleLabel.element.textContent = H > 0.5 ? `H=${H.toFixed(1)}°` : 'H≈0°';
+
+  // Shadow length label
+  const shadowMid = shadowTipPos.clone().multiplyScalar(0.5).add(new THREE.Vector3(0.1, 0.1, 0));
+  shadowLabel.position.copy(shadowMid);
+  shadowLabel.element.textContent = isFinite(shadowLength) ? `L=${shadowLength.toFixed(2)}m` : 'L→∞';
+
+  // Formula live
+  const hStr = H.toFixed(1), lStr = isFinite(shadowLength) ? shadowLength.toFixed(2) : '→∞';
+  document.getElementById('formula-live').textContent = `L = ${state.poleH.toFixed(1)} / tan(${hStr}°) = ${lStr} m`;
+
+  // Right panel
+  document.getElementById('shadow-len').textContent = isFinite(shadowLength) ? shadowLength.toFixed(2) : '→∞';
+  document.getElementById('d-H').textContent = H.toFixed(1) + '°';
+  document.getElementById('d-h').textContent = state.poleH.toFixed(1) + ' m';
+  document.getElementById('d-decl').textContent = (decl>=0?'+':'')+decl.toFixed(1)+'°';
+  document.getElementById('d-lat').textContent = (lat>=0?'+':'')+lat.toFixed(1)+'°';
+  const sd = shadowDirection(lat, decl);
+  document.getElementById('d-dir').textContent = sd.dir;
+  document.getElementById('d-rule').textContent = sd.rule;
+
+  // Left panel labels
+  document.getElementById('lat-val').textContent = (lat>=0?'+':'')+lat.toFixed(1)+'°';
+  document.getElementById('lat-name').textContent = Math.abs(lat).toFixed(1)+(lat>=0?'°N':'°S');
+  document.getElementById('doy-name').textContent = doyLabel(doy);
+  document.getElementById('decl-val').textContent = 'δ = '+(decl>=0?'+':'')+decl.toFixed(1)+'°';
+
+  controls.update();
+  composer.render();
+  labelRenderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  const w=wrap.clientWidth,h=wrap.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);composer.setSize(w,h);bloomPass.resolution.set(w,h);labelRenderer.setSize(w,h);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>正午太阳高度角 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #070a13;
+    --bg-panel: rgba(12, 17, 28, 0.82);
+    --bg-panel-solid: #0c111c;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.18);
+    --text-primary: #e8ecf3;
+    --text-secondary: #8a95a8;
+    --text-dim: #5a6577;
+    --accent-warm: #f4a853;
+    --accent-hot: #e85d4a;
+    --accent-cool: #6db3d9;
+    --accent-green: #7dc48a;
+    --font-display: 'Fraunces', 'Noto Serif SC', serif;
+    --font-sans: 'Noto Sans SC', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-sans); overflow: hidden; font-weight: 300; letter-spacing: 0.01em; }
+  #app { display: grid; grid-template-columns: 340px 1fr 280px; height: 100vh; position: relative; z-index: 1; }
+  .panel-left { background: var(--bg-panel); backdrop-filter: blur(20px); border-right: 1px solid var(--line); overflow-y: auto; padding: 28px 24px; }
+  .panel-left::-webkit-scrollbar { width: 4px; }
+  .panel-left::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 2px; }
+  .brand-block { margin-bottom: 28px; }
+  .brand-title { font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .brand-title em { font-style: italic; color: var(--accent-warm); font-weight: 400; }
+  .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.18em; font-family: var(--font-mono); }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-decoration: none; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px; }
+  .back-link:hover { color: var(--accent-warm); }
+  .section { margin-bottom: 24px; }
+  .section-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.22em; font-family: var(--font-mono); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .section-label::before { content: ''; width: 6px; height: 1px; background: var(--accent-warm); }
+  .kp-select { width: 100%; padding: 11px 14px; background: transparent; border: 1px solid var(--line-strong); color: var(--text-primary); font-family: var(--font-sans); font-size: 13px; border-radius: 2px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px; }
+  .kp-select:hover { border-color: var(--accent-warm); }
+  .kp-select option { background: var(--bg-panel-solid); }
+  .slider-row { margin-bottom: 14px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .slider-label { font-size: 12px; color: var(--text-secondary); }
+  .slider-value { font-family: var(--font-mono); font-size: 12px; color: var(--accent-warm); font-weight: 500; }
+  input[type="range"] { -webkit-appearance: none; width: 100%; height: 2px; background: var(--line-strong); outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent-warm); border-radius: 50%; cursor: pointer; border: 2px solid var(--bg-deep); box-shadow: 0 0 0 1px var(--accent-warm); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { padding: 9px 10px; background: transparent; border: 1px solid var(--line-strong); color: var(--text-secondary); font-family: var(--font-sans); font-size: 12px; cursor: pointer; border-radius: 2px; transition: all 0.15s ease; }
+  .btn:hover { border-color: var(--accent-warm); color: var(--text-primary); }
+  .btn.primary { background: var(--accent-warm); color: #1a1208; border-color: var(--accent-warm); font-weight: 500; }
+  .formula-box { background: rgba(244,168,83,0.06); border: 1px solid rgba(244,168,83,0.2); border-radius: 2px; padding: 14px; margin-top: 10px; }
+  .formula-text { font-family: var(--font-mono); font-size: 14px; color: var(--accent-warm); text-align: center; margin-bottom: 6px; }
+  .formula-sub { font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+  .canvas-wrap { position: relative; background: radial-gradient(ellipse at center, #0a1220 0%, #050811 100%); }
+  #three-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  #three-canvas:active { cursor: grabbing; }
+  .kp-overlay { position: absolute; top: 24px; left: 24px; right: 24px; max-width: 720px; background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--line); border-left: 2px solid var(--accent-warm); padding: 16px 20px; border-radius: 2px; z-index: 10; }
+  .kp-overlay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .kp-overlay-title { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.22em; color: var(--accent-warm); }
+  .kp-overlay-close { cursor: pointer; color: var(--text-dim); font-size: 16px; line-height: 1; background: none; border: none; }
+  .kp-overlay-body { font-size: 13px; line-height: 1.75; color: var(--text-secondary); }
+  .kp-overlay-body strong { color: var(--text-primary); font-weight: 500; }
+  .top-badge { position: absolute; top: 24px; right: 24px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; z-index: 5; }
+  .instruction { position: absolute; bottom: 20px; right: 24px; font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.12em; }
+  .panel-right { background: var(--bg-panel); backdrop-filter: blur(20px); border-left: 1px solid var(--line); overflow-y: auto; padding: 28px 22px; }
+  .panel-right::-webkit-scrollbar { width: 4px; }
+  .data-title { font-family: var(--font-display); font-size: 18px; font-weight: 500; margin-bottom: 18px; letter-spacing: -0.01em; }
+  .data-block { padding: 14px 0; border-top: 1px solid var(--line); }
+  .data-block:first-of-type { border-top: none; padding-top: 0; }
+  .data-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 12px; }
+  .data-label { color: var(--text-dim); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .data-value { color: var(--text-primary); font-family: var(--font-mono); font-weight: 500; font-size: 13px; }
+  .data-value.accent { color: var(--accent-warm); }
+  .data-value.hot { color: var(--accent-hot); }
+  .data-value.cool { color: var(--accent-cool); }
+  .h-big { font-family: var(--font-mono); font-size: 40px; font-weight: 600; color: var(--accent-warm); text-align: center; margin: 14px 0 4px; letter-spacing: -0.02em; }
+  .h-label { font-size: 11px; color: var(--text-dim); text-align: center; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
+  .chart-wrap { background: rgba(0,0,0,0.2); border: 1px solid var(--line); border-radius: 2px; padding: 10px; margin-top: 8px; }
+  .chart-label { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; }
+  #lat-chart { display: block; width: 100%; }
+  @media (max-width: 1200px) { #app { grid-template-columns: 300px 1fr 240px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-sub">Geographic Time · Module 03</div>
+      <h1 class="brand-title">正午<em>太阳高度</em></h1>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;line-height:1.6;">H = 90° − |φ − δ| · 纬度与季节的双重效应</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-select">
+        <option value="formula">公式推导与几何意义</option>
+        <option value="latitude">纬度效应</option>
+        <option value="season">季节效应</option>
+        <option value="polar">极点与极圈的反直觉</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">观测纬度 φ</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="lat-name">北京 39.9°N</span>
+          <span class="slider-value" id="lat-val">+39.9°</span>
+        </div>
+        <input type="range" id="lat" min="-90" max="90" value="39.9" step="0.1" />
+      </div>
+      <div class="btn-row">
+        <button class="btn" data-lat="90">北极</button>
+        <button class="btn" data-lat="66.6">北极圈</button>
+        <button class="btn" data-lat="23.4">北回归线</button>
+        <button class="btn" data-lat="0">赤道</button>
+        <button class="btn" data-lat="-23.4">南回归线</button>
+        <button class="btn" data-lat="-90">南极</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">日期（直射纬度 δ）</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="doy-name">春分</span>
+          <span class="slider-value" id="decl-val">δ = +0.0°</span>
+        </div>
+        <input type="range" id="doy" min="0" max="365" value="80" />
+      </div>
+      <div class="btn-row">
+        <button class="btn" data-doy="80">春分</button>
+        <button class="btn" data-doy="172">夏至</button>
+        <button class="btn" data-doy="266">秋分</button>
+        <button class="btn" data-doy="355">冬至</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="formula-box">
+        <div class="formula-text" id="formula-live">H = 90° − |φ − δ|</div>
+        <div class="formula-sub">
+          φ = 观测纬度<br>
+          δ = 太阳直射纬度（赤纬）<br>
+          H ∈ [0°, 90°]；H = 0° → 无直射；H = 90° → 太阳直射该点
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">可视化控制</div>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-reset">重置视角</button>
+        <button class="btn" id="btn-side">侧视</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay">
+      <div class="kp-overlay-header">
+        <div class="kp-overlay-title">知识点解读</div>
+        <button class="kp-overlay-close" id="kp-close">—</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body"></div>
+    </div>
+    <div class="top-badge">geo · solar altitude · H</div>
+    <div class="instruction">左键拖拽 · 滚轮缩放</div>
+  </main>
+
+  <aside class="panel-right">
+    <h2 class="data-title">实时计算</h2>
+    <div class="data-block">
+      <div class="h-big" id="H-display">47.7°</div>
+      <div class="h-label">正午太阳高度角 H</div>
+      <div class="data-row"><span class="data-label">观测纬度 φ</span><span class="data-value accent" id="d-lat">+39.9°</span></div>
+      <div class="data-row"><span class="data-label">直射纬度 δ</span><span class="data-value hot" id="d-decl">+0.0°</span></div>
+      <div class="data-row"><span class="data-label">|φ − δ|</span><span class="data-value cool" id="d-diff">39.9°</span></div>
+      <div class="data-row"><span class="data-label">H = 90° − |φ − δ|</span><span class="data-value accent" id="d-H">50.1°</span></div>
+    </div>
+
+    <div class="data-block">
+      <div class="data-label" style="margin-bottom:6px;">同一日期各纬度对比</div>
+      <div class="data-row"><span class="data-label">北极 90°N</span><span class="data-value" id="h-pole-n">—</span></div>
+      <div class="data-row"><span class="data-label">北极圈 66.6°N</span><span class="data-value" id="h-arctic">—</span></div>
+      <div class="data-row"><span class="data-label">北回归线 23.4°N</span><span class="data-value" id="h-tropic-n">—</span></div>
+      <div class="data-row"><span class="data-label">赤道 0°</span><span class="data-value" id="h-equator">—</span></div>
+      <div class="data-row"><span class="data-label">南回归线 23.4°S</span><span class="data-value" id="h-tropic-s">—</span></div>
+      <div class="data-row"><span class="data-label">南极 90°S</span><span class="data-value" id="h-pole-s">—</span></div>
+    </div>
+
+    <div class="data-block">
+      <div class="chart-wrap">
+        <div class="chart-label">纬度 → H（当前日期）</div>
+        <canvas id="lat-chart" width="220" height="120"></canvas>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+const R = 1.8; // earth radius
+
+const KP_DOCS = {
+  'formula': `<strong>正午太阳高度角公式</strong>：H = 90° − |φ − δ|。其中 φ 为观测地纬度，δ 为太阳直射纬度（赤纬）。几何意义：正午时太阳在子午线上，高度角就是太阳光线与地平面的夹角；|φ − δ| 是观测点纬度与直射点纬度的角距离，也是太阳光线与地面法线（天顶方向）的夹角（天顶角），两者之和为 90°。`,
+  'latitude': `<strong>纬度效应</strong>：在同一日期（δ固定），H 随纬度减小而减小——离直射点越远，高度角越小。当 |φ − δ| = 90° 时，H = 0°（太阳在地平线上），对应极夜边界。重要反直觉：<strong>极点并非全球 H 最小</strong>——极点的 H = 90° − |90° − δ| = δ（夏至时δ=23.4°，极点 H=23.4°），比某些极圈附近的中间纬度还高！`,
+  'season': `<strong>季节效应</strong>：同一纬度，δ 随季节从 −23.4° 到 +23.4° 变化，H 随之变化。<br>北半球：夏至 δ=+23.4°，H 最大；冬至 δ=−23.4°，H 最小。差值 = 2 × 23.4° = 46.8°（全年变化幅度）。<br>特殊点：南北回归线上全年有一次或两次 H = 90°（太阳直射）；赤道上每年有两次 H = 90°（春分、秋分）。`,
+  'polar': `<strong>极点与极圈的反直觉</strong>（认知冲突核心）：<br>拖动纬度到 90°N，夏至时 H = 90° − |90° − 23.4°| = 90° − 66.6° = <strong>23.4°</strong>，不是 0°！北极点在夏至时有阳光（极昼），太阳在地平线以上绕一圈，始终保持 23.4° 高度。<br>同样，南极点在冬至时 H = 23.4°，不是最小值。最小 H = 0° 出现在晨昏圈经过的纬度，即 90° − δ 处。`,
+};
+
+// THREE SETUP
+const canvas = document.getElementById('three-canvas');
+const wrap = canvas.parentElement;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+camera.position.set(5, 2, 6);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+renderer.setClearColor(0x050811, 1);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+labelRenderer.domElement.style.cssText = 'position:absolute;top:0;pointer-events:none;';
+wrap.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 3; controls.maxDistance = 20;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(wrap.clientWidth, wrap.clientHeight), 0.3, 0.5, 0.9);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+const sunLight = new THREE.DirectionalLight(0xffe9c7, 1.5);
+scene.add(sunLight);
+
+// Stars
+const sg = new THREE.BufferGeometry();
+const sp = new Float32Array(1500 * 3);
+for (let i = 0; i < 1500; i++) {
+  const r = 50+Math.random()*20, th = Math.random()*6.28, ph = Math.acos(2*Math.random()-1);
+  sp[i*3]=r*Math.sin(ph)*Math.cos(th); sp[i*3+1]=r*Math.cos(ph); sp[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+}
+sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+scene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff,size:0.08,transparent:true,opacity:0.6})));
+
+// Earth (shared block — simplified for this module, no full texture load needed for clarity)
+const TEX_DAY = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_atmos_2048.jpg';
+const TEX_SPEC = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_specular_2048.jpg';
+const texLoader = new THREE.TextureLoader(); texLoader.crossOrigin = 'anonymous';
+
+const phCanvas = document.createElement('canvas'); phCanvas.width=2; phCanvas.height=2;
+phCanvas.getContext('2d').fillStyle='#0e1830'; phCanvas.getContext('2d').fillRect(0,0,2,2);
+const phTex = new THREE.CanvasTexture(phCanvas); phTex.colorSpace = THREE.SRGBColorSpace;
+
+const earthVert = `varying vec3 vNormal;varying vec3 vWorldPos;void main(){vNormal=normalize(mat3(modelMatrix)*normal);vec4 wp=modelMatrix*vec4(position,1.);vWorldPos=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`;
+const earthFrag = `precision highp float;varying vec3 vNormal;varying vec3 vWorldPos;uniform vec3 uSunDir;uniform sampler2D uDayMap;uniform sampler2D uSpecMap;uniform float uHasTex;uniform float uHasSpec;void main(){vec3 rawN=normalize(vNormal);float lon=atan(rawN.z,rawN.x);float lat2=asin(clamp(rawN.y,-1.,1.));vec2 uv=vec2(lon/(2.*3.14159265)+0.5,0.5-lat2/3.14159265);vec3 dayCol=uHasTex>0.5?texture2D(uDayMap,uv).rgb:vec3(0.12,0.18,0.28);float lighting=dot(rawN,normalize(uSunDir));float dayF=smoothstep(-0.12,0.18,lighting);vec3 nightCol=dayCol*0.05+vec3(0.008,0.012,0.02);vec3 litDay=dayCol*(0.32+0.78*max(lighting,0.));float specMask=uHasSpec>0.5?texture2D(uSpecMap,uv).r:0.;vec3 vDir=normalize(cameraPosition-vWorldPos);vec3 hDir=normalize(normalize(uSunDir)+vDir);float specVal=pow(max(dot(rawN,hDir),0.),36.)*specMask*dayF;litDay+=vec3(1.,0.96,0.82)*specVal*0.85;vec3 col=mix(nightCol,litDay,dayF);float rim=1.-max(dot(vDir,rawN),0.);col+=vec3(0.25,0.52,0.88)*pow(rim,3.2)*0.6*(0.3+0.7*dayF);gl_FragColor=vec4(col,1.);}`;
+const earthMat = new THREE.ShaderMaterial({ uniforms:{ uSunDir:{value:new THREE.Vector3(1,0,0)}, uDayMap:{value:phTex}, uSpecMap:{value:phTex}, uHasTex:{value:0.}, uHasSpec:{value:0.} }, vertexShader:earthVert, fragmentShader:earthFrag });
+const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(R,96,64), earthMat);
+scene.add(earthMesh);
+// Atmo
+const atmoMat2 = new THREE.ShaderMaterial({ vertexShader:`varying vec3 vNormal;varying vec3 vWorldPos;void main(){vNormal=normalize(mat3(modelMatrix)*normal);vec4 wp=modelMatrix*vec4(position,1.);vWorldPos=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`, fragmentShader:`varying vec3 vNormal;varying vec3 vWorldPos;void main(){vec3 v=normalize(cameraPosition-vWorldPos);float rim=1.-max(dot(v,normalize(vNormal)),0.);gl_FragColor=vec4(.3,.55,.85,pow(rim,2.5)*.9);}`, transparent:true, side:THREE.BackSide, depthWrite:false });
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(R*1.03,64,48), atmoMat2));
+texLoader.load(TEX_DAY, t=>{t.colorSpace=THREE.SRGBColorSpace;earthMat.uniforms.uDayMap.value=t;earthMat.uniforms.uHasTex.value=1.;earthMat.needsUpdate=true;});
+texLoader.load(TEX_SPEC, t=>{earthMat.uniforms.uSpecMap.value=t;earthMat.uniforms.uHasSpec.value=1.;});
+
+// Equator
+const eqPts=[];for(let i=0;i<=128;i++){const t=(i/128)*Math.PI*2;eqPts.push(new THREE.Vector3(R*Math.cos(t),0,R*Math.sin(t)));}
+scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(eqPts), new THREE.LineBasicMaterial({color:0xe85d4a,transparent:true,opacity:0.5})));
+
+// Sun sphere (far away, small — represents direction)
+const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.15,16,16), new THREE.MeshBasicMaterial({color:0xffe9c7}));
+scene.add(sunMesh);
+
+// ── Observation point marker ──────────────────────────────────────────────
+const obsGroup = new THREE.Group();
+scene.add(obsGroup);
+
+// Tangent plane at observation point
+const planeMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(1.2, 1.2),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.07, side: THREE.DoubleSide })
+);
+obsGroup.add(planeMesh);
+
+// Horizon circle
+const horzPts = [];
+for (let i = 0; i <= 64; i++) { const t=(i/64)*Math.PI*2; horzPts.push(new THREE.Vector3(0.6*Math.cos(t),0,0.6*Math.sin(t))); }
+const horizonLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(horzPts), new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.3}));
+obsGroup.add(horizonLine);
+
+// Zenith line (normal to earth surface at obs point)
+const zenithArrow = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 0.7, 0x7dc48a, 0.1, 0.06);
+obsGroup.add(zenithArrow);
+
+// Sun ray arrow (direction from obs toward sun)
+const sunRayArrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 1.4, 0xf4a853, 0.12, 0.07);
+obsGroup.add(sunRayArrow);
+
+// Angle arc (between sun ray and ground plane)
+const arcGroup = new THREE.Group();
+obsGroup.add(arcGroup);
+
+// Obs dot
+const obsDot = new THREE.Mesh(new THREE.SphereGeometry(0.04,16,16), new THREE.MeshBasicMaterial({color:0xf4a853}));
+obsGroup.add(obsDot);
+
+// Labels
+function makeLabel(text, color='#e8ecf3', size='11px') {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `color:${color};font-family:'JetBrains Mono',monospace;font-size:${size};letter-spacing:0.08em;text-shadow:0 0 8px rgba(0,0,0,0.9);pointer-events:none;`;
+  return new CSS2DObject(el);
+}
+const zenithLabel = makeLabel('天顶', '#7dc48a', '10px');
+zenithLabel.position.set(0, 0.8, 0);
+obsGroup.add(zenithLabel);
+
+const sunRayLabel = makeLabel('', '#f4a853', '10px');
+sunRayLabel.position.set(0, 0, 0); // updated each frame
+obsGroup.add(sunRayLabel);
+
+const hLabel = makeLabel('H', '#f4a853', '13px');
+obsGroup.add(hLabel);
+
+// ── H angle arc geometry ──────────────────────────────────────────────────
+function buildAngleArc(H_deg) {
+  arcGroup.clear();
+  if (H_deg <= 0 || H_deg >= 90) return;
+  const arcR = 0.45;
+  const pts = [];
+  for (let i = 0; i <= 32; i++) {
+    const a = (i / 32) * H_deg * DEG;
+    pts.push(new THREE.Vector3(arcR * Math.cos(a), arcR * Math.sin(a), 0));
+  }
+  arcGroup.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color: 0xf4a853, transparent: true, opacity: 0.8 })
+  ));
+  // H label at midpoint of arc
+  const mid = H_deg / 2 * DEG;
+  hLabel.position.set((arcR + 0.12) * Math.cos(mid), (arcR + 0.12) * Math.sin(mid), 0);
+}
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+const state = { lat: 39.9, doy: 80 };
+
+function computeDecl(doy) { return 23.44 * Math.sin(2 * Math.PI * (doy + 284) / 365.25); }
+function computeH(lat, decl) { return Math.max(0, 90 - Math.abs(lat - decl)); }
+function fmtDeg(v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + '°'; }
+
+function latName(lat) {
+  if (Math.abs(lat - 90) < 0.5) return '北极';
+  if (Math.abs(lat - 66.6) < 0.5) return '北极圈';
+  if (Math.abs(lat - 23.4) < 0.5) return '北回归线';
+  if (Math.abs(lat) < 0.5) return '赤道';
+  if (Math.abs(lat + 23.4) < 0.5) return '南回归线';
+  if (Math.abs(lat + 66.6) < 0.5) return '南极圈';
+  if (Math.abs(lat + 90) < 0.5) return '南极';
+  return (lat >= 0 ? '' : '') + Math.abs(lat).toFixed(1) + (lat >= 0 ? '°N' : '°S');
+}
+
+function doyLabel(doy) {
+  const specials = [{doy:80,n:'春分'},{doy:172,n:'夏至'},{doy:266,n:'秋分'},{doy:355,n:'冬至'}];
+  for (const s of specials) { if (Math.abs(doy-s.doy)<4) return s.n; }
+  return 'doy ' + Math.round(doy);
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────
+const kpSelect = document.getElementById('kp-select');
+const kpBody = document.getElementById('kp-body');
+const kpOverlay = document.getElementById('kp-overlay');
+function updateKP() { kpBody.innerHTML = KP_DOCS[kpSelect.value]; }
+kpSelect.addEventListener('change', updateKP); updateKP();
+document.getElementById('kp-close').addEventListener('click', () => { kpOverlay.style.display = kpOverlay.style.display==='none'?'':'none'; });
+
+const latInput = document.getElementById('lat');
+latInput.addEventListener('input', () => { state.lat = +latInput.value; });
+document.querySelectorAll('[data-lat]').forEach(b => b.addEventListener('click', () => { state.lat = +b.dataset.lat; latInput.value = state.lat; }));
+
+const doyInput = document.getElementById('doy');
+doyInput.addEventListener('input', () => { state.doy = +doyInput.value; });
+document.querySelectorAll('[data-doy]').forEach(b => b.addEventListener('click', () => { state.doy = +b.dataset.doy; doyInput.value = state.doy; }));
+
+document.getElementById('btn-reset').addEventListener('click', () => { camera.position.set(5,2,6); controls.target.set(0,0,0); controls.update(); });
+document.getElementById('btn-side').addEventListener('click', () => { camera.position.set(7,0,0); controls.target.set(0,0,0); controls.update(); });
+
+// ── CHART ──────────────────────────────────────────────────────────────────
+const chartCanvas = document.getElementById('lat-chart');
+const chartCtx = chartCanvas.getContext('2d');
+function drawChart(decl, currentLat) {
+  const W = chartCanvas.offsetWidth || 220, H2 = 120;
+  chartCanvas.width = W; chartCanvas.height = H2;
+  chartCtx.clearRect(0,0,W,H2);
+  chartCtx.strokeStyle = 'rgba(255,255,255,0.05)'; chartCtx.lineWidth = 1;
+  [0,H2/2,H2].forEach(y=>{chartCtx.beginPath();chartCtx.moveTo(0,y);chartCtx.lineTo(W,y);chartCtx.stroke();});
+  // Axis labels
+  chartCtx.fillStyle='rgba(90,101,119,0.8)'; chartCtx.font='8px JetBrains Mono,monospace';
+  chartCtx.fillText('90°', 2, 10); chartCtx.fillText('0°', 2, H2/2+4); // H axis
+  // Curve
+  chartCtx.strokeStyle='#f4a853'; chartCtx.lineWidth=1.5;
+  chartCtx.beginPath();
+  for (let lat = -90; lat <= 90; lat += 1) {
+    const H = computeH(lat, decl);
+    const x = ((lat + 90) / 180) * W;
+    const y = H2 - (H / 90) * (H2 - 6);
+    lat === -90 ? chartCtx.moveTo(x,y) : chartCtx.lineTo(x,y);
+  }
+  chartCtx.stroke();
+  // Current lat marker
+  const cx = ((currentLat + 90) / 180) * W;
+  const H_cur = computeH(currentLat, decl);
+  const cy = H2 - (H_cur / 90) * (H2 - 6);
+  chartCtx.strokeStyle='#ffffff'; chartCtx.lineWidth=1; chartCtx.setLineDash([3,3]);
+  chartCtx.beginPath(); chartCtx.moveTo(cx,0); chartCtx.lineTo(cx,H2); chartCtx.stroke();
+  chartCtx.setLineDash([]);
+  chartCtx.fillStyle='#ffffff'; chartCtx.beginPath(); chartCtx.arc(cx,cy,3,0,Math.PI*2); chartCtx.fill();
+  // x-axis labels
+  chartCtx.fillStyle='rgba(90,101,119,0.7)'; chartCtx.font='8px JetBrains Mono,monospace';
+  chartCtx.fillText('90°S', 2, H2-2); chartCtx.fillText('赤道', W/2-10, H2-2); chartCtx.fillText('90°N', W-26, H2-2);
+}
+
+// ── ANIMATE ──────────────────────────────────────────────────────────────
+function animate() {
+  requestAnimationFrame(animate);
+
+  const { lat, doy } = state;
+  const decl = computeDecl(doy);
+  const H = computeH(lat, decl);
+
+  // Sun direction: noon — sun is in the south (or north) of the observer.
+  // In world space: observer is at lat φ. At solar noon, sun is due south (N hemisphere, δ<φ).
+  // Sun elevation = H above south horizon.
+  // Observer pos on sphere: x=cos(lat)*cos(0), y=sin(lat), z=0 → obsPos = (cos(lat), sin(lat), 0)
+  const latR = lat * DEG;
+  const obsPos = new THREE.Vector3(Math.cos(latR) * R, Math.sin(latR) * R, 0);
+
+  // Obs surface normal (outward from earth center)
+  const obsNormal = new THREE.Vector3(Math.cos(latR), Math.sin(latR), 0);
+
+  // At solar noon, sun is in the direction: vertical plane containing north and the observer.
+  // Sun direction (world): rotate obsNormal by H upward toward north in the meridian plane.
+  // Meridian "north" unit tangent at obs: ∂/∂lat direction = (-sin(lat), cos(lat), 0)
+  const northTangent = new THREE.Vector3(-Math.sin(latR), Math.cos(latR), 0);
+  // If δ < φ: sun is to the south (negative northTangent) — rotate H degrees toward south from zenith.
+  // Sun dir in world: obsNormal rotated by (90-H) toward south = by -(90-H) toward north.
+  // Or: sunDir = sin(H)*obsNormal + cos(H)*(southDir) where southDir = sign(φ-δ)*(-northTangent)
+  const southSign = lat >= decl ? 1 : -1; // 1 = south, -1 = north
+  const HR = H * DEG;
+  const sunDir = new THREE.Vector3()
+    .addScaledVector(obsNormal, Math.sin(HR))
+    .addScaledVector(northTangent, -southSign * Math.cos(HR))
+    .normalize();
+
+  // Position sun sphere far away in sun direction
+  sunMesh.position.copy(sunDir).multiplyScalar(7);
+  sunLight.position.copy(sunDir).multiplyScalar(10);
+  earthMat.uniforms.uSunDir.value.copy(sunDir);
+
+  // Position obsGroup at obs point, oriented so local Y = outward normal
+  obsGroup.position.copy(obsPos);
+  // Align obsGroup so local Y = obsNormal (outward)
+  obsGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), obsNormal);
+
+  // In obsGroup local frame: Y = outward (zenith), need sun direction in local frame
+  const localSunDir = sunDir.clone().applyQuaternion(obsGroup.quaternion.clone().invert());
+  // Local X-Z = ground plane (horizon). localSunDir.y = sin(H).
+  // Rotate sunRayArrow to point toward local sun
+  sunRayArrow.setDirection(localSunDir.normalize());
+  sunRayArrow.setLength(H > 2 ? 1.3 : 0.6, 0.12, 0.07);
+  sunRayLabel.element.textContent = 'H = ' + H.toFixed(1) + '°';
+  sunRayLabel.position.copy(localSunDir.clone().multiplyScalar(0.8));
+
+  // Arc must lie in the plane containing zenith (Y) and sunDir
+  // Build arc in obsGroup's local frame
+  arcGroup.clear();
+  if (H > 1 && H < 89) {
+    const arcR2 = 0.45;
+    const pts = [];
+    // Arc from ground plane (angle 0 from local X direction toward sun proj) to H degrees up
+    // Project sun direction onto horizon: localSunProj = normalize(localSunDir.x, 0, localSunDir.z)
+    const localSunProj = new THREE.Vector3(localSunDir.x, 0, localSunDir.z).normalize();
+    for (let i = 0; i <= 24; i++) {
+      const a = (i / 24) * H * DEG;
+      const v = new THREE.Vector3().addScaledVector(localSunProj, Math.cos(a)).addScaledVector(new THREE.Vector3(0,1,0), Math.sin(a));
+      pts.push(v.multiplyScalar(arcR2));
+    }
+    arcGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0xf4a853,transparent:true,opacity:0.85})));
+    // Label at midpoint
+    const midA = (H / 2) * DEG;
+    const midV = new THREE.Vector3().addScaledVector(localSunProj, Math.cos(midA)).addScaledVector(new THREE.Vector3(0,1,0), Math.sin(midA)).multiplyScalar(arcR2 + 0.15);
+    hLabel.position.copy(midV);
+    hLabel.element.textContent = H.toFixed(1) + '°';
+  } else {
+    hLabel.element.textContent = '';
+  }
+
+  // Update plane orientation (in obsGroup local frame, Y=zenith, want plane in XZ)
+  planeMesh.rotation.x = -Math.PI / 2;
+
+  // UI updates
+  document.getElementById('lat-val').textContent = fmtDeg(lat);
+  document.getElementById('lat-name').textContent = latName(lat) + ' ' + (lat>=0?lat.toFixed(1)+'°N':Math.abs(lat).toFixed(1)+'°S');
+  document.getElementById('doy-name').textContent = doyLabel(doy);
+  document.getElementById('decl-val').textContent = 'δ = ' + fmtDeg(decl);
+  document.getElementById('formula-live').textContent = `H = 90° − |${lat>=0?'+':''}${lat.toFixed(1)}° − (${decl>=0?'+':''}${decl.toFixed(1)}°)| = ${H.toFixed(1)}°`;
+  document.getElementById('H-display').textContent = H.toFixed(1) + '°';
+  document.getElementById('d-lat').textContent = fmtDeg(lat);
+  document.getElementById('d-decl').textContent = fmtDeg(decl);
+  document.getElementById('d-diff').textContent = Math.abs(lat - decl).toFixed(1) + '°';
+  document.getElementById('d-H').textContent = H.toFixed(1) + '°';
+
+  // Multi-lat table
+  const refs = [{id:'h-pole-n',lat:90},{id:'h-arctic',lat:66.6},{id:'h-tropic-n',lat:23.4},{id:'h-equator',lat:0},{id:'h-tropic-s',lat:-23.4},{id:'h-pole-s',lat:-90}];
+  refs.forEach(({id, lat: rlat}) => {
+    const hv = computeH(rlat, decl);
+    document.getElementById(id).textContent = hv.toFixed(1) + '°';
+  });
+
+  drawChart(decl, lat);
+
+  controls.update();
+  composer.render();
+  labelRenderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  renderer.setSize(w,h); composer.setSize(w,h); bloomPass.resolution.set(w,h); labelRenderer.setSize(w,h);
+});
+</script>
+</body>
+</html>

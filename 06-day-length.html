@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>昼夜长短变化 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .slider-row{margin-bottom:14px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-label{font-size:12px;color:var(--text-secondary);}
+  .slider-value{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);font-weight:500;}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:2px;background:var(--line-strong);outline:none;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent-warm);border-radius:50%;cursor:pointer;border:2px solid var(--bg-deep);box-shadow:0 0 0 1px var(--accent-warm);}
+  .formula-box{background:rgba(244,168,83,.06);border:1px solid rgba(244,168,83,.2);border-radius:2px;padding:12px;margin-top:8px;}
+  .formula-text{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);text-align:center;margin-bottom:5px;line-height:1.6;}
+  .formula-sub{font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#0a1220 0%,#050811 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay[hidden]{display:none;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:24px 20px;}
+  .panel-right::-webkit-scrollbar{width:4px;}.panel-right::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .data-section{margin-bottom:20px;}
+  .data-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);margin-bottom:8px;}
+  .data-value{font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--accent-warm);line-height:1;}
+  .data-unit{font-size:12px;color:var(--text-secondary);margin-left:4px;font-weight:400;}
+  .data-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);}
+  .data-row-label{font-size:12px;color:var(--text-secondary);}
+  .data-row-val{font-family:var(--font-mono);font-size:12px;color:var(--text-primary);}
+  .heatmap-wrap{margin-top:8px;}
+  canvas.heatmap{display:block;width:100%;height:180px;border:1px solid var(--line);border-radius:2px;}
+  .heatmap-legend{display:flex;justify-content:space-between;margin-top:4px;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);}
+  .struggle-box{background:rgba(232,93,74,.06);border:1px solid rgba(232,93,74,.25);border-radius:2px;padding:12px;margin-top:8px;}
+  .struggle-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.15em;color:var(--accent-hot);margin-bottom:6px;}
+  .struggle-text{font-size:12px;color:var(--text-secondary);line-height:1.6;}
+  .lat-table{width:100%;border-collapse:collapse;margin-top:8px;}
+  .lat-table th,.lat-table td{font-size:10px;padding:5px 4px;text-align:left;border-bottom:1px solid var(--line);}
+  .lat-table th{font-family:var(--font-mono);color:var(--text-dim);font-weight:400;letter-spacing:.08em;}
+  .lat-table td{font-family:var(--font-mono);color:var(--text-primary);}
+  .lat-table .hl{color:var(--accent-warm);}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-title">昼夜<em>长短变化</em></div>
+      <div class="brand-sub">Module 06 · Day Length Variation</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-sel">
+        <option value="cosH0">昼弧公式 cos H₀ = −tan φ · tan δ</option>
+        <option value="summer">夏半年：北半球昼长夜短</option>
+        <option value="winter">冬半年：北半球昼短夜长</option>
+        <option value="equinox">春秋分：全球昼夜平分</option>
+        <option value="polar">极昼极夜：极圈以内</option>
+        <option value="law">昼长随纬度和季节的变化规律</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">参数控制</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">日期（第几天）</span>
+          <span class="slider-value" id="doy-val">172</span>
+        </div>
+        <input type="range" id="doy" min="1" max="365" value="172" step="1">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">观测纬度 φ</span>
+          <span class="slider-value" id="lat-val">40°N</span>
+        </div>
+        <input type="range" id="lat" min="-90" max="90" value="40" step="0.5">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">快速日期</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="btn" onclick="setDoy(172)">夏至 6/21</button>
+        <button class="btn" onclick="setDoy(355)">冬至 12/22</button>
+        <button class="btn" onclick="setDoy(80)">春分 3/21</button>
+        <button class="btn" onclick="setDoy(264)">秋分 9/23</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">公式</div>
+      <div class="formula-box">
+        <div class="formula-text">cos H₀ = −tan φ · tan δ</div>
+        <div class="formula-text">T = 2H₀ / 15°/h</div>
+        <div class="formula-sub">H₀：半昼弧度数（°）<br>T：昼长（小时）<br>δ：太阳赤纬（°）<br>φ：观测纬度（°）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: 3D -->
+  <div class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay">
+      <div class="kp-overlay-header">
+        <span class="kp-overlay-title">知识点说明</span>
+        <button class="kp-overlay-close" onclick="document.getElementById('kp-overlay').hidden=true">×</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="data-section">
+      <div class="data-label">当前昼长</div>
+      <div><span class="data-value" id="dl-val">—</span><span class="data-unit">小时</span></div>
+    </div>
+    <div class="data-section">
+      <div class="data-row"><span class="data-row-label">太阳赤纬 δ</span><span class="data-row-val" id="decl-val">—</span></div>
+      <div class="data-row"><span class="data-row-label">半昼弧 H₀</span><span class="data-row-val" id="h0-val">—</span></div>
+      <div class="data-row"><span class="data-row-label">日出（地方时）</span><span class="data-row-val" id="rise-val">—</span></div>
+      <div class="data-row"><span class="data-row-label">日落（地方时）</span><span class="data-row-val" id="set-val">—</span></div>
+      <div class="data-row"><span class="data-row-label">极昼/极夜</span><span class="data-row-val" id="polar-val">否</span></div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">昼长热力图（纬度×日期）</div>
+      <div class="heatmap-wrap"><canvas class="heatmap" id="heatmap" width="240" height="180"></canvas></div>
+      <div class="heatmap-legend">
+        <span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:6px;font-family:var(--font-mono);">✕ 当前位置</div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">纬度对比（当前日期）</div>
+      <table class="lat-table">
+        <thead><tr><th>纬度</th><th>昼长(h)</th><th>状态</th></tr></thead>
+        <tbody id="lat-table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="struggle-box">
+      <div class="struggle-label">认知冲突</div>
+      <div class="struggle-text">把纬度拖至 90°N（北极）——夏至时昼长 <strong>24h</strong>，冬至时昼长 <strong>0h</strong>。极圈内存在极昼极夜，而非只是昼长"稍长"。</div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ── KP docs ──────────────────────────────────────────────────────────────────
+const KP_DOCS = {
+  cosH0:`<strong>cos H₀ = −tan φ · tan δ</strong><br>H₀为半昼弧度数（°）。昼长 T = 2H₀/15（小时）。<br>当 |tan φ · tan δ| > 1 时方程无解：极昼（δ·φ > 0 且值大）或极夜（δ·φ < 0 且值大）。`,
+  summer:`北半球夏半年（3/21—9/23）：δ > 0，北纬各地昼长 > 12h；纬度越高昼越长；北极圈以内出现极昼。`,
+  winter:`北半球冬半年（9/23—3/21）：δ < 0，北纬各地昼长 < 12h；纬度越高昼越短；北极圈以内出现极夜。南半球与之相反。`,
+  equinox:`春分（约3/21，doy≈80）和秋分（约9/23，doy≈264）：δ ≈ 0°，全球各纬度昼夜各 12h。晨昏线过南北极点，与经线重合。`,
+  polar:`极圈（±66.56°）以内：当 |δ| + |φ| ≥ 90° 时出现极昼；|δ| − |φ| ≤ −90° 时出现极夜。南北极点每年各有约半年极昼、半年极夜。`,
+  law:`规律：①同一日期，纬度绝对值越大，与赤道昼长差异越大；②同一纬度，夏至/冬至是极值，春秋分是平均值；③南北半球同纬度绝对值的点昼夜互补（昼长之和=24h）。`
+};
+document.getElementById('kp-sel').addEventListener('change', e=>{
+  const el = document.getElementById('kp-overlay');
+  document.getElementById('kp-body').innerHTML = KP_DOCS[e.target.value] || '';
+  el.hidden = false;
+});
+
+// ── Math helpers ──────────────────────────────────────────────────────────────
+const DEG = Math.PI/180;
+function declination(doy){ return 23.44*Math.sin(DEG*(doy+284)*360/365.25); }
+function dayLength(latDeg, declDeg){
+  const phi = latDeg*DEG, delta = declDeg*DEG;
+  const cosH0 = -Math.tan(phi)*Math.tan(delta);
+  if(cosH0 >= 1) return 0;   // polar night
+  if(cosH0 <= -1) return 24; // polar day
+  const H0 = Math.acos(cosH0)/DEG;
+  return 2*H0/15;
+}
+
+// ── Three.js setup ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setClearColor(0x050811,1);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;';
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45,2,0.1,100);
+camera.position.set(0,3,5);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping=true; controls.dampingFactor=0.05;
+controls.minDistance=2.5; controls.maxDistance=12;
+
+// Ambient + directional sun
+scene.add(new THREE.AmbientLight(0x111827,1));
+const sunLight = new THREE.DirectionalLight(0xfff5e0,2.5);
+scene.add(sunLight);
+
+// Earth globe
+const EARTH_R = 1.5;
+const earthGroup = new THREE.Group();
+scene.add(earthGroup);
+
+// Simple textured earth (no bloom here — keep it simple for data viz focus)
+const loader = new THREE.TextureLoader();
+const earthMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R, 64, 48),
+  new THREE.MeshPhongMaterial({color:0x2244aa, specular:0x111122, shininess:30})
+);
+earthGroup.add(earthMesh);
+loader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_atmos_2048.jpg',
+  t=>{ earthMesh.material.map=t; earthMesh.material.needsUpdate=true; });
+
+// Terminator (day/night divider) — great circle ring
+const termGeo = new THREE.RingGeometry(EARTH_R+0.002, EARTH_R+0.012, 128);
+const termMat = new THREE.MeshBasicMaterial({color:0xf4a853, side:THREE.DoubleSide, transparent:true, opacity:0.7});
+const termMesh = new THREE.Mesh(termGeo, termMat);
+earthGroup.add(termMesh);
+
+// Day hemisphere overlay (transparent)
+const dayHemi = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R+0.005, 64, 48, 0, Math.PI),
+  new THREE.MeshBasicMaterial({color:0xfff8e1, transparent:true, opacity:0.08, side:THREE.FrontSide, depthWrite:false})
+);
+earthGroup.add(dayHemi);
+
+// Latitude lines
+const latLinesGroup = new THREE.Group();
+earthGroup.add(latLinesGroup);
+function buildLatLines(){
+  latLinesGroup.clear();
+  const special = [0, 23.44, -23.44, 66.56, -66.56, 90, -90];
+  special.forEach(la=>{
+    const r = EARTH_R * Math.cos(la*DEG);
+    const y = EARTH_R * Math.sin(la*DEG);
+    if(r < 0.01) return;
+    const pts=[], N=128;
+    for(let i=0;i<=N;i++){ const a=i/N*Math.PI*2; pts.push(new THREE.Vector3(r*Math.cos(a),y,r*Math.sin(a))); }
+    const isSpecial = [23.44,-23.44,66.56,-66.56].includes(la);
+    const col = la===0 ? 0x6db3d9 : (isSpecial ? 0xf4a853 : 0x334466);
+    const opacity = la===0 ? 0.6 : (isSpecial ? 0.4 : 0.2);
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:col, transparent:true, opacity}));
+    latLinesGroup.add(line);
+  });
+}
+buildLatLines();
+
+// Axis
+const axisLine = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-EARTH_R*1.4,0),new THREE.Vector3(0,EARTH_R*1.4,0)]),
+  new THREE.LineBasicMaterial({color:0x334466, transparent:true, opacity:0.5})
+);
+earthGroup.add(axisLine);
+
+// Observer dot
+const obsDot = new THREE.Mesh(new THREE.SphereGeometry(0.045,16,12), new THREE.MeshBasicMaterial({color:0x7dc48a}));
+earthGroup.add(obsDot);
+
+// CSS2D label for observer
+const obsDiv = document.createElement('div');
+obsDiv.style.cssText='font-family:monospace;font-size:11px;color:#7dc48a;white-space:nowrap;background:rgba(7,10,19,.7);padding:2px 5px;border-radius:2px;';
+obsDiv.textContent='观测点';
+const obsLabel = new CSS2DObject(obsDiv);
+obsDot.add(obsLabel);
+
+// Day-arc line on observer latitude circle
+let dayArc = null;
+
+// Sun marker (small sphere far away, just for orientation)
+const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.12,16,12), new THREE.MeshBasicMaterial({color:0xffe080}));
+scene.add(sunMesh);
+
+// ── State ──────────────────────────────────────────────────────────────────
+let doy = 172, lat = 40;
+
+function setDoy(d){ doy=d; document.getElementById('doy').value=d; update(); }
+window.setDoy = setDoy;
+
+// ── Update scene ──────────────────────────────────────────────────────────────
+function update(){
+  const decl = declination(doy);
+  const dl = dayLength(lat, decl);
+  const phi = lat*DEG, delta = decl*DEG;
+  const cosH0 = -Math.tan(phi)*Math.tan(delta);
+  const H0 = (cosH0 >= 1 || cosH0 <= -1) ? null : Math.acos(cosH0)/DEG;
+
+  // Sun direction in world space (sun always on +X side for simplicity)
+  // Terminator plane: normal = sunDir projected to earth equatorial plane
+  const sunDir = new THREE.Vector3(Math.cos(delta), Math.sin(delta), 0).normalize();
+  sunLight.position.copy(sunDir.clone().multiplyScalar(10));
+  sunMesh.position.copy(sunDir.clone().multiplyScalar(4));
+
+  // Terminator: the great circle perpendicular to sunDir
+  // Rotate ring from its initial XY-plane normal (+Z) to sunDir
+  termMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), sunDir);
+
+  // Day hemisphere: center faces sun
+  dayHemi.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,-1), sunDir.clone().negate());
+
+  // Observer position on globe
+  const obsNormal = new THREE.Vector3(Math.cos(phi),Math.sin(phi),0);
+  obsDot.position.copy(obsNormal.clone().multiplyScalar(EARTH_R+0.08));
+  obsLabel.position.set(0,0.15,0);
+
+  // Day arc on observer latitude circle
+  earthGroup.remove(dayArc);
+  dayArc = null;
+  if(H0 !== null){
+    const r = EARTH_R*Math.cos(phi)+0.01;
+    const y = EARTH_R*Math.sin(phi);
+    // H0 degrees of longitude around the latitude circle, centered on local noon (sun directly south/north)
+    // Local noon lon = lon where sunDir projects; for our setup sun is in XZ plane lon direction
+    // Sun projected onto equatorial = (cos(delta),0,0) → noon is at lon=0 for day 0
+    // We show the arc symmetrically ±H0 in longitude
+    const pts=[];
+    const segments=64;
+    for(let i=0;i<=segments;i++){
+      const lonDeg = -H0 + 2*H0*(i/segments);
+      const lon = lonDeg*DEG;
+      pts.push(new THREE.Vector3(r*Math.cos(lon), y, r*Math.sin(lon)));
+    }
+    dayArc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0xf4a853, linewidth:2}));
+    earthGroup.add(dayArc);
+  }
+
+  // UI update
+  document.getElementById('doy-val').textContent = doy;
+  const mn = 'JFMAMJJASOND';
+  document.getElementById('lat-val').textContent = lat>=0 ? lat+'°N' : (-lat)+'°S';
+  document.getElementById('decl-val').textContent = decl.toFixed(2)+'°';
+  document.getElementById('h0-val').textContent = H0 ? H0.toFixed(1)+'°' : (cosH0<=-1?'极昼':'极夜');
+  document.getElementById('dl-val').textContent = dl.toFixed(2);
+  const riseH = 12 - dl/2, setH = 12 + dl/2;
+  const fmt = h=>{ const hh=Math.floor(h); const mm=Math.round((h-hh)*60); return hh+':'+(mm<10?'0':'')+mm; };
+  document.getElementById('rise-val').textContent = dl<=0 ? '极夜' : (dl>=24 ? '极昼' : fmt(riseH));
+  document.getElementById('set-val').textContent = dl<=0 ? '极夜' : (dl>=24 ? '极昼' : fmt(setH));
+  document.getElementById('polar-val').textContent = dl<=0?'极夜':(dl>=24?'极昼':'否');
+
+  // Lat table
+  const refLats = [90,66.56,40,0,-40,-66.56,-90];
+  const tbody = document.getElementById('lat-table-body');
+  tbody.innerHTML = refLats.map(l=>{
+    const d2=dayLength(l,decl);
+    const status = d2<=0?'极夜':(d2>=24?'极昼':'—');
+    const hl = l===lat?'hl':'';
+    return `<tr><td class="${hl}">${l>=0?l+'N':(-l)+'S'}</td><td class="${hl}">${d2.toFixed(1)}</td><td class="${hl}">${status}</td></tr>`;
+  }).join('');
+
+  drawHeatmap();
+}
+
+// ── Heatmap ──────────────────────────────────────────────────────────────────
+function drawHeatmap(){
+  const c = document.getElementById('heatmap');
+  const ctx = c.getContext('2d');
+  const W=c.width, H=c.height;
+  const imageData = ctx.createImageData(W,H);
+  for(let ix=0;ix<W;ix++){
+    const d = Math.round(1+ix/W*364);
+    const dec = declination(d);
+    for(let iy=0;iy<H;iy++){
+      const la = 90 - iy/H*180; // +90 top, -90 bottom
+      const dl = dayLength(la, dec);
+      const t = dl/24; // 0..1
+      // Color: 0h=deep blue, 12h=neutral, 24h=warm gold
+      let r,g,b;
+      if(t<0.5){ r=Math.round(t*2*100); g=Math.round(t*2*120); b=Math.round(100+t*2*80); }
+      else{ const u=t*2-1; r=Math.round(100+u*155); g=Math.round(120+u*80); b=Math.round(180-u*150); }
+      const idx=(iy*W+ix)*4;
+      imageData.data[idx]=r; imageData.data[idx+1]=g; imageData.data[idx+2]=b; imageData.data[idx+3]=255;
+    }
+  }
+  ctx.putImageData(imageData,0,0);
+  // Draw cursor
+  const cx = Math.round((doy-1)/364*W);
+  const cy = Math.round((90-lat)/180*H);
+  ctx.strokeStyle='#ffffff'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx-5,cy); ctx.lineTo(cx+5,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,cy-5); ctx.lineTo(cx,cy+5); ctx.stroke();
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+document.getElementById('doy').addEventListener('input', e=>{ doy=+e.target.value; update(); });
+document.getElementById('lat').addEventListener('input', e=>{ lat=+e.target.value; update(); });
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  renderer.setSize(w,h,false);
+  labelRenderer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+// ── Animation loop ─────────────────────────────────────────────────────────────
+let last=0;
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=(t-last)/1000; last=t;
+  earthGroup.rotation.y += dt*0.04; // slow spin
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+update();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

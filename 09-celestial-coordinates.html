@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>赤道坐标系 · 天球 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .slider-row{margin-bottom:14px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-label{font-size:12px;color:var(--text-secondary);}
+  .slider-value{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);font-weight:500;}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:2px;background:var(--line-strong);outline:none;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent-warm);border-radius:50%;cursor:pointer;border:2px solid var(--bg-deep);box-shadow:0 0 0 1px var(--accent-warm);}
+  .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-top:6px;}
+  .check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer;user-select:none;}
+  .check input{appearance:none;width:14px;height:14px;border:1px solid var(--line-strong);border-radius:2px;cursor:pointer;position:relative;flex-shrink:0;}
+  .check input:checked{background:var(--accent-warm);border-color:var(--accent-warm);}
+  .check input:checked::after{content:'';position:absolute;left:3px;top:0;width:4px;height:8px;border:solid var(--bg-deep);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+  .formula-box{background:rgba(244,168,83,.06);border:1px solid rgba(244,168,83,.2);border-radius:2px;padding:12px;margin-top:8px;}
+  .formula-text{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);text-align:center;margin-bottom:5px;line-height:1.6;}
+  .formula-sub{font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#050c18 0%,#020408 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay[hidden]{display:none;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:24px 20px;}
+  .panel-right::-webkit-scrollbar{width:4px;}.panel-right::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .data-section{margin-bottom:20px;}
+  .data-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);margin-bottom:8px;}
+  .data-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);}
+  .data-row-label{font-size:11px;color:var(--text-secondary);}
+  .data-row-val{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);}
+  .struggle-box{background:rgba(232,93,74,.06);border:1px solid rgba(232,93,74,.25);border-radius:2px;padding:12px;margin-top:12px;}
+  .struggle-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.15em;color:var(--accent-hot);margin-bottom:6px;}
+  .struggle-text{font-size:12px;color:var(--text-secondary);line-height:1.6;}
+  .star-list{margin-top:6px;}
+  .star-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);}
+  .star-name{font-size:11px;color:var(--text-primary);}
+  .star-coords{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-title"><em>赤道</em>坐标系</div>
+      <div class="brand-sub">Module 09 · Equatorial Coordinates</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-sel">
+        <option value="equatorial">赤道坐标系：赤经α与赤纬δ</option>
+        <option value="ecliptic">黄道面与黄赤交角</option>
+        <option value="equinox">春分点γ与赤经零点</option>
+        <option value="star">著名天体坐标</option>
+        <option value="analemma">日行迹（Analemma）</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">天体位置</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">赤经 α（时角）</span>
+          <span class="slider-value" id="ra-val">6h</span>
+        </div>
+        <input type="range" id="ra" min="0" max="24" value="6" step="0.1">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">赤纬 δ</span>
+          <span class="slider-value" id="dec-val">23.4°</span>
+        </div>
+        <input type="range" id="dec" min="-90" max="90" value="23.4" step="0.1">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">快速天体</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="goStar(5.92,7.41)">参宿四 Betelgeuse</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="goStar(6.75,16.72)">天狼 Sirius</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="goStar(0,0)">春分点 γ</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="goStar(18.62,38.78)">织女 Vega</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">图层</div>
+      <div class="check-grid">
+        <label class="check"><input type="checkbox" id="lyr-grid" checked> 天球坐标网</label>
+        <label class="check"><input type="checkbox" id="lyr-ecliptic" checked> 黄道</label>
+        <label class="check"><input type="checkbox" id="lyr-equator" checked> 天赤道</label>
+        <label class="check"><input type="checkbox" id="lyr-stars" checked> 参考星</label>
+        <label class="check"><input type="checkbox" id="lyr-analemma" checked> 日行迹</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">公式</div>
+      <div class="formula-box">
+        <div class="formula-text">α：赤经（0–24h，从春分点向东）</div>
+        <div class="formula-text">δ：赤纬（-90°~+90°）</div>
+        <div class="formula-text">ε = 23.44°（黄赤交角）</div>
+        <div class="formula-sub">天球坐标与地理坐标类比：<br>赤经≈经度，赤纬≈纬度<br>参考面：天赤道（地球赤道延伸面）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: 3D -->
+  <div class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay" hidden>
+      <div class="kp-overlay-header">
+        <span class="kp-overlay-title">知识点说明</span>
+        <button class="kp-overlay-close" onclick="document.getElementById('kp-overlay').hidden=true">×</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="data-section">
+      <div class="data-label">当前天体位置</div>
+      <div class="data-row"><span class="data-row-label">赤经 α</span><span class="data-row-val" id="disp-ra">—</span></div>
+      <div class="data-row"><span class="data-row-label">赤纬 δ</span><span class="data-row-val" id="disp-dec">—</span></div>
+      <div class="data-row"><span class="data-row-label">黄经 λ（近似）</span><span class="data-row-val" id="disp-eclon">—</span></div>
+      <div class="data-row"><span class="data-row-label">黄纬 β（近似）</span><span class="data-row-val" id="disp-eclat">—</span></div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">参考天体</div>
+      <div class="star-list">
+        <div class="star-item"><span class="star-name">参宿四 Betelgeuse</span><span class="star-coords">α5h55m δ+7.4°</span></div>
+        <div class="star-item"><span class="star-name">天狼 Sirius</span><span class="star-coords">α6h45m δ-16.7°</span></div>
+        <div class="star-item"><span class="star-name">织女 Vega</span><span class="star-coords">α18h37m δ+38.8°</span></div>
+        <div class="star-item"><span class="star-name">北极星 Polaris</span><span class="star-coords">α2h32m δ+89.3°</span></div>
+        <div class="star-item"><span class="star-name">心宿二 Antares</span><span class="star-coords">α16h30m δ-26.4°</span></div>
+        <div class="star-item"><span class="star-name">春分点 γ</span><span class="star-coords">α0h δ0°</span></div>
+      </div>
+    </div>
+
+    <div class="struggle-box">
+      <div class="struggle-label">认知冲突</div>
+      <div class="struggle-text">
+        天赤道与地球赤道<strong>不在同一平面</strong>——天赤道是地球赤道投影到天球上的大圆，但天赤道和黄道相交于春分点和秋分点，交角正是黄赤交角 23.44°。<br><br>
+        北极星赤纬 ≈ +89.3°，不是恰好 +90°——真正的天北极会随岁差移动，约26000年一周。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const KP_DOCS = {
+  equatorial:`<strong>赤道坐标系</strong>：以天赤道为基准面，以春分点γ为赤经零点。<br>赤经α：从春分点沿天赤道向东量，单位：时(h)/分/秒，1h=15°。<br>赤纬δ：从天赤道向天北极(+)或天南极(-)量，单位：度。<br>恒星坐标在此系中几乎不变（岁差除外），适合编制星表。`,
+  ecliptic:`<strong>黄道</strong>：地球公转轨道面与天球的交线（大圆）。太阳沿黄道每年运行一圈。黄赤交角 ε=23.44°，这是地球自转轴与公转轨道面法线的夹角，也是季节变化的根源。`,
+  equinox:`<strong>春分点γ</strong>：黄道与天赤道的交点之一，太阳从南向北穿越天赤道处。是赤经、黄经的共同零点。每年约3月21日太阳到达春分点。`,
+  star:`<strong>著名天体坐标</strong>（J2000.0历元）：<br>北极星：α=2h32m，δ=+89°16'（极近天北极）<br>天狼星：α=6h45m，δ=−16°43'（最亮恒星）<br>织女星：α=18h37m，δ=+38°47'<br>牛郎星：α=19h51m，δ=+8°52'`,
+  analemma:`<strong>日行迹（Analemma）</strong>：每天同一地方时在天球上标记太阳位置，一年形成"8字形"曲线。成因：①地球公转速度不均匀（椭圆轨道）②黄赤交角（赤道分量差异）。8字上下对应赤纬的季节变化，左右对应均时差（最大±16分钟）。`
+};
+document.getElementById('kp-sel').addEventListener('change', e=>{
+  const el=document.getElementById('kp-overlay');
+  document.getElementById('kp-body').innerHTML=KP_DOCS[e.target.value]||'';
+  el.hidden=false;
+});
+
+const DEG=Math.PI/180;
+const EPSILON=23.44*DEG; // obliquity
+const DOME_R=3.5;
+
+// RA/Dec → 3D position (RA measured from +X axis eastward in equatorial plane)
+function raDecToXYZ(ra_h, dec_deg, r){
+  const ra=ra_h*15*DEG, dec=dec_deg*DEG;
+  return new THREE.Vector3(r*Math.cos(dec)*Math.cos(ra), r*Math.sin(dec), r*Math.cos(dec)*Math.sin(ra));
+}
+
+// ── Three.js setup ─────────────────────────────────────────────────────────────
+const canvas=document.getElementById('three-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setClearColor(0x010408,1);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth,canvas.clientHeight);
+labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;';
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(50,2,0.01,100);
+camera.position.set(0,2,5);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.05;
+
+scene.add(new THREE.AmbientLight(0xffffff,0.3));
+
+// ── Celestial sphere (transparent wireframe dome) ─────────────────────────────
+const sphereGeo=new THREE.SphereGeometry(DOME_R,36,24);
+const sphereWire=new THREE.Mesh(sphereGeo,new THREE.MeshBasicMaterial({color:0x112244,transparent:true,opacity:0.08,wireframe:false,side:THREE.BackSide}));
+scene.add(sphereWire);
+
+// Coordinate grid group
+const gridGroup=new THREE.Group(); scene.add(gridGroup);
+const eclipticGroup=new THREE.Group(); scene.add(eclipticGroup);
+const equatorGroup=new THREE.Group(); scene.add(equatorGroup);
+const starsGroup=new THREE.Group(); scene.add(starsGroup);
+const analemmaGroup=new THREE.Group(); scene.add(analemmaGroup);
+
+// ── Equatorial grid ────────────────────────────────────────────────────────────
+function buildGrid(){
+  gridGroup.clear();
+  // Dec circles every 30°
+  [-60,-30,0,30,60].forEach(d=>{
+    const pts=[]; const N=128;
+    for(let i=0;i<=N;i++){ pts.push(raDecToXYZ(i/N*24, d, DOME_R*0.99)); }
+    const col=d===0?0x334488:0x1a2a44;
+    gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:d===0?0.0:0.35})));
+  });
+  // RA meridians every 3h
+  for(let ra=0;ra<24;ra+=3){
+    const pts=[]; const N=64;
+    for(let i=0;i<=N;i++){ const d=-90+i*180/N; pts.push(raDecToXYZ(ra, d, DOME_R*0.99)); }
+    gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x1a2a44,transparent:true,opacity:0.35})));
+  }
+  // RA axis
+  gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-DOME_R,0),new THREE.Vector3(0,DOME_R,0)]),new THREE.LineBasicMaterial({color:0x334488,transparent:true,opacity:0.5})));
+}
+buildGrid();
+
+// ── Celestial equator ──────────────────────────────────────────────────────────
+function buildEquator(){
+  equatorGroup.clear();
+  const pts=[]; const N=128;
+  for(let i=0;i<=N;i++) pts.push(raDecToXYZ(i/N*24,0,DOME_R*0.995));
+  equatorGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x6db3d9,transparent:true,opacity:0.7})));
+  // Equator label
+  const div=document.createElement('div');
+  div.style.cssText='font-family:monospace;font-size:11px;color:#6db3d9;background:rgba(5,8,17,.8);padding:2px 6px;border-radius:2px;';
+  div.textContent='天赤道';
+  const lbl=new CSS2DObject(div);
+  lbl.position.copy(raDecToXYZ(3,0,DOME_R+0.12));
+  equatorGroup.add(lbl);
+}
+buildEquator();
+
+// ── Ecliptic ───────────────────────────────────────────────────────────────────
+function buildEcliptic(){
+  eclipticGroup.clear();
+  const pts=[]; const N=256;
+  for(let i=0;i<=N;i++){
+    const lon=(i/N)*Math.PI*2;
+    // Ecliptic coords → equatorial: rotate by epsilon around X axis
+    const x=DOME_R*0.995*Math.cos(lon);
+    const y=DOME_R*0.995*Math.sin(lon)*Math.cos(EPSILON);
+    const z=DOME_R*0.995*Math.sin(lon)*Math.sin(EPSILON);
+    // In our coord: RA goes around Y, equatorial X=cos(dec)*cos(ra), Y=sin(dec), Z=cos(dec)*sin(ra)
+    // Ecliptic in equatorial: x_ecl=cos(λ), y_ecl=sin(λ)cos(ε), z_ecl=sin(λ)sin(ε)
+    pts.push(new THREE.Vector3(x,z,y)); // Note axis mapping: Y=sin(dec) up, Z=eastward
+  }
+  // Actually redo with correct transform: ecliptic plane has normal = (0, sin(ε), -cos(ε)) in equatorial
+  pts.length=0;
+  for(let i=0;i<=N;i++){
+    const lon=(i/N)*Math.PI*2;
+    const cosL=Math.cos(lon), sinL=Math.sin(lon);
+    // ecl→equ: x=cosL, y_equ=sinL*cos(ε), z_equ=sinL*sin(ε) (approx, ignoring obliquity direction detail)
+    // In THREE: x=RA=0 axis, y=north pole, z=east (RA=6h)
+    const xe=DOME_R*cosL;
+    const ye=DOME_R*sinL*Math.sin(EPSILON);
+    const ze=DOME_R*sinL*Math.cos(EPSILON);
+    pts.push(new THREE.Vector3(xe,ye,ze));
+  }
+  eclipticGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xf4a853,transparent:true,opacity:0.8})));
+  // Vernal equinox marker
+  const gp=new THREE.Mesh(new THREE.SphereGeometry(0.06,12,8),new THREE.MeshBasicMaterial({color:0xf4a853}));
+  gp.position.set(DOME_R,0,0);
+  eclipticGroup.add(gp);
+  const gdiv=document.createElement('div');
+  gdiv.style.cssText='font-family:monospace;font-size:11px;color:#f4a853;background:rgba(5,8,17,.8);padding:2px 6px;border-radius:2px;white-space:nowrap;';
+  gdiv.textContent='春分点 γ (α=0h)';
+  const glbl=new CSS2DObject(gdiv);
+  glbl.position.set(DOME_R*1.08,0.1,0);
+  eclipticGroup.add(glbl);
+  // Ecliptic label
+  const ediv=document.createElement('div');
+  ediv.style.cssText='font-family:monospace;font-size:11px;color:#f4a853;background:rgba(5,8,17,.8);padding:2px 6px;border-radius:2px;';
+  ediv.textContent='黄道';
+  const elbl=new CSS2DObject(ediv);
+  elbl.position.copy(new THREE.Vector3(0,DOME_R*Math.sin(EPSILON)*1.1,DOME_R*Math.cos(EPSILON)*0.7));
+  eclipticGroup.add(elbl);
+}
+buildEcliptic();
+
+// ── Reference stars ────────────────────────────────────────────────────────────
+const STARS=[
+  {name:'天狼 Sirius', ra:6.75, dec:-16.72, col:0x9ecfff, size:0.05},
+  {name:'参宿四 Betelgeuse', ra:5.92, dec:7.41, col:0xff8060, size:0.05},
+  {name:'织女 Vega', ra:18.62, dec:38.78, col:0xaaccff, size:0.05},
+  {name:'牛郎 Altair', ra:19.85, dec:8.87, col:0xffffff, size:0.04},
+  {name:'心宿二 Antares', ra:16.49, dec:-26.43, col:0xff6040, size:0.05},
+  {name:'北极星 Polaris', ra:2.53, dec:89.26, col:0xddddff, size:0.06},
+  {name:'五车二 Capella', ra:5.28, dec:45.99, col:0xffee88, size:0.04},
+];
+
+function buildStars(){
+  starsGroup.clear();
+  STARS.forEach(s=>{
+    const pos=raDecToXYZ(s.ra, s.dec, DOME_R*0.97);
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(s.size,8,6),new THREE.MeshBasicMaterial({color:s.col}));
+    mesh.position.copy(pos);
+    starsGroup.add(mesh);
+    const div=document.createElement('div');
+    div.style.cssText=`font-family:monospace;font-size:10px;color:#8a95a8;white-space:nowrap;background:rgba(5,8,17,.7);padding:1px 4px;border-radius:2px;`;
+    div.textContent=s.name;
+    const lbl=new CSS2DObject(div);
+    lbl.position.copy(pos.clone().multiplyScalar(1.04));
+    starsGroup.add(lbl);
+  });
+}
+buildStars();
+
+// ── Analemma ───────────────────────────────────────────────────────────────────
+function buildAnalemma(){
+  analemmaGroup.clear();
+  const pts=[];
+  for(let doy=1;doy<=365;doy++){
+    // Solar declination
+    const decl=23.44*Math.sin(DEG*(doy+284)*360/365.25);
+    // Equation of time (simplified Fourier approximation, minutes)
+    const B=(360/365.25)*(doy-81)*DEG;
+    const EoT=9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B); // minutes
+    // Sun RA at solar noon: convert EoT to RA offset (1 min = 0.25°)
+    const raOffset=EoT*(0.25/15); // in hours
+    const sunRA=12+raOffset; // nominal noon RA
+    pts.push(raDecToXYZ(sunRA, decl, DOME_R*0.85));
+  }
+  analemmaGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x7dc48a,transparent:true,opacity:0.7})));
+  const div=document.createElement('div');
+  div.style.cssText='font-family:monospace;font-size:10px;color:#7dc48a;background:rgba(5,8,17,.8);padding:2px 6px;border-radius:2px;';
+  div.textContent='日行迹（Analemma）';
+  const lbl=new CSS2DObject(div);
+  lbl.position.copy(raDecToXYZ(12.3, -5, DOME_R*0.88));
+  analemmaGroup.add(lbl);
+}
+buildAnalemma();
+
+// ── Target marker ──────────────────────────────────────────────────────────────
+const targetMesh=new THREE.Mesh(new THREE.SphereGeometry(0.07,12,8),new THREE.MeshBasicMaterial({color:0xf4a853}));
+scene.add(targetMesh);
+const targetDiv=document.createElement('div');
+targetDiv.style.cssText='font-family:monospace;font-size:11px;color:#f4a853;background:rgba(5,8,17,.85);padding:3px 7px;border-radius:2px;white-space:nowrap;';
+targetDiv.textContent='●';
+const targetLabel=new CSS2DObject(targetDiv);
+targetMesh.add(targetLabel);
+targetLabel.position.set(0.1,0.1,0);
+
+// RA/Dec lines from center
+let raLine=null, decLine=null;
+
+function updateTarget(ra_h, dec_deg){
+  const pos=raDecToXYZ(ra_h, dec_deg, DOME_R*0.95);
+  targetMesh.position.copy(pos);
+  targetDiv.textContent=`α=${ra_h.toFixed(1)}h  δ=${dec_deg.toFixed(1)}°`;
+
+  // RA angle arc: circle in equatorial plane at RA
+  if(raLine) scene.remove(raLine);
+  const pts=[]; const N=64;
+  for(let i=0;i<=N;i++){
+    const t=i/N;
+    pts.push(raDecToXYZ(t*ra_h, 0, DOME_R*0.5));
+  }
+  raLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x6db3d9,transparent:true,opacity:0.6}));
+  scene.add(raLine);
+
+  // Dec line: vertical from equator to target
+  if(decLine) scene.remove(decLine);
+  const pts2=[];
+  for(let i=0;i<=32;i++){
+    pts2.push(raDecToXYZ(ra_h, dec_deg*i/32, DOME_R*0.95));
+  }
+  decLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts2),new THREE.LineBasicMaterial({color:0xf4a853,transparent:true,opacity:0.6}));
+  scene.add(decLine);
+
+  // Update readout
+  document.getElementById('disp-ra').textContent=ra_h.toFixed(2)+'h ('+((ra_h*15).toFixed(1))+'°)';
+  document.getElementById('disp-dec').textContent=dec_deg.toFixed(2)+'°';
+  // Approx ecliptic coords (simplified)
+  const ra=ra_h*15*DEG, dec=dec_deg*DEG;
+  const sinBeta=Math.sin(dec)*Math.cos(EPSILON)-Math.cos(dec)*Math.sin(EPSILON)*Math.sin(ra);
+  const beta=Math.asin(Math.max(-1,Math.min(1,sinBeta)))/DEG;
+  const cosLam=(Math.cos(dec)*Math.cos(ra))/Math.cos(beta*DEG);
+  const lam=Math.acos(Math.max(-1,Math.min(1,cosLam)))/DEG;
+  document.getElementById('disp-eclon').textContent=lam.toFixed(1)+'°';
+  document.getElementById('disp-eclat').textContent=beta.toFixed(1)+'°';
+}
+
+// ── Sliders ────────────────────────────────────────────────────────────────────
+let ra_h=6, dec_deg=23.4;
+function updateSliders(){
+  document.getElementById('ra-val').textContent=ra_h.toFixed(1)+'h';
+  document.getElementById('dec-val').textContent=dec_deg.toFixed(1)+'°';
+  updateTarget(ra_h, dec_deg);
+}
+document.getElementById('ra').addEventListener('input',e=>{ ra_h=+e.target.value; updateSliders(); });
+document.getElementById('dec').addEventListener('input',e=>{ dec_deg=+e.target.value; updateSliders(); });
+
+function goStar(ra,dec){
+  ra_h=ra; dec_deg=dec;
+  document.getElementById('ra').value=ra;
+  document.getElementById('dec').value=dec;
+  updateSliders();
+}
+window.goStar=goStar;
+
+// ── Layer toggles ──────────────────────────────────────────────────────────────
+document.getElementById('lyr-grid').addEventListener('change',e=>gridGroup.visible=e.target.checked);
+document.getElementById('lyr-ecliptic').addEventListener('change',e=>eclipticGroup.visible=e.target.checked);
+document.getElementById('lyr-equator').addEventListener('change',e=>equatorGroup.visible=e.target.checked);
+document.getElementById('lyr-stars').addEventListener('change',e=>starsGroup.visible=e.target.checked);
+document.getElementById('lyr-analemma').addEventListener('change',e=>analemmaGroup.visible=e.target.checked);
+
+// ── Background stars ───────────────────────────────────────────────────────────
+const bgStarGeo=new THREE.BufferGeometry();
+const bgPos=[];
+for(let i=0;i<800;i++){
+  const u=Math.random()*2-1, v=Math.random()*2-1, w=Math.random()*2-1;
+  const l=Math.sqrt(u*u+v*v+w*w);
+  bgPos.push(u/l*DOME_R*1.2, v/l*DOME_R*1.2, w/l*DOME_R*1.2);
+}
+bgStarGeo.setAttribute('position',new THREE.Float32BufferAttribute(bgPos,3));
+scene.add(new THREE.Points(bgStarGeo,new THREE.PointsMaterial({color:0xffffff,size:0.018,transparent:true,opacity:0.5})));
+
+// ── Resize & animate ───────────────────────────────────────────────────────────
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  renderer.setSize(w,h,false); labelRenderer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+updateSliders();
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

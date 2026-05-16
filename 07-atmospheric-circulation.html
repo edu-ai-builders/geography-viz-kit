@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>气压带与风带 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .slider-row{margin-bottom:14px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-label{font-size:12px;color:var(--text-secondary);}
+  .slider-value{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);font-weight:500;}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:2px;background:var(--line-strong);outline:none;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent-warm);border-radius:50%;cursor:pointer;border:2px solid var(--bg-deep);box-shadow:0 0 0 1px var(--accent-warm);}
+  .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-top:6px;}
+  .check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer;user-select:none;}
+  .check input{appearance:none;width:14px;height:14px;border:1px solid var(--line-strong);border-radius:2px;cursor:pointer;position:relative;flex-shrink:0;}
+  .check input:checked{background:var(--accent-warm);border-color:var(--accent-warm);}
+  .check input:checked::after{content:'';position:absolute;left:3px;top:0;width:4px;height:8px;border:solid var(--bg-deep);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+  .formula-box{background:rgba(244,168,83,.06);border:1px solid rgba(244,168,83,.2);border-radius:2px;padding:12px;margin-top:8px;}
+  .formula-text{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);text-align:center;margin-bottom:5px;line-height:1.6;}
+  .formula-sub{font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#0a1220 0%,#050811 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay[hidden]{display:none;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:24px 20px;}
+  .panel-right::-webkit-scrollbar{width:4px;}.panel-right::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .data-section{margin-bottom:20px;}
+  .data-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);margin-bottom:8px;}
+  .data-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);}
+  .data-row-label{font-size:11px;color:var(--text-secondary);}
+  .data-row-val{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);}
+  .belt-list{margin-top:8px;}
+  .belt-item{padding:6px 10px;margin-bottom:5px;border-radius:2px;font-size:11px;line-height:1.5;}
+  .belt-H{background:rgba(232,93,74,.15);border-left:2px solid var(--accent-hot);}
+  .belt-L{background:rgba(109,179,217,.15);border-left:2px solid var(--accent-cool);}
+  .belt-label{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-bottom:2px;}
+  .belt-name{font-size:12px;color:var(--text-primary);margin-bottom:1px;}
+  .belt-wind{font-size:10px;color:var(--text-secondary);}
+  .struggle-box{background:rgba(232,93,74,.06);border:1px solid rgba(232,93,74,.25);border-radius:2px;padding:12px;margin-top:12px;}
+  .struggle-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.15em;color:var(--accent-hot);margin-bottom:6px;}
+  .struggle-text{font-size:12px;color:var(--text-secondary);line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-title">气压带与<em>风带</em></div>
+      <div class="brand-sub">Module 07 · Atmospheric Circulation</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-sel">
+        <option value="belts">七个气压带、六个风带</option>
+        <option value="coriolis">科里奥利力与风向偏转</option>
+        <option value="shift">气压带风带的季节移动</option>
+        <option value="monsoon">季风的形成——海陆热力差异</option>
+        <option value="climate">气压带风带与气候类型</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">季节偏移</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">日期（第几天）</span>
+          <span class="slider-value" id="doy-val">172</span>
+        </div>
+        <input type="range" id="doy" min="1" max="365" value="172" step="1">
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:-6px;margin-bottom:10px;">
+        ↑ 气压带随太阳直射点季节性南北移动 5–7°
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setDoy(172)">夏至 6/21</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setDoy(355)">冬至 12/22</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setDoy(80)">春分 3/21</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setDoy(264)">秋分 9/23</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">图层</div>
+      <div class="check-grid">
+        <label class="check"><input type="checkbox" id="lyr-belts" checked> 气压带</label>
+        <label class="check"><input type="checkbox" id="lyr-winds" checked> 风带箭头</label>
+        <label class="check"><input type="checkbox" id="lyr-coriolis" checked> 科氏偏转</label>
+        <label class="check"><input type="checkbox" id="lyr-labels" checked> 名称标注</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">气压带标准纬度（理想）</div>
+      <div class="formula-box">
+        <div class="formula-text">赤道低压带：0°</div>
+        <div class="formula-text">副热带高压带：±30°</div>
+        <div class="formula-text">副极地低压带：±60°</div>
+        <div class="formula-text">极地高压带：±90°</div>
+        <div class="formula-sub">实际季节偏移：±5~7°（随δ移动）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: 3D -->
+  <div class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay" hidden>
+      <div class="kp-overlay-header">
+        <span class="kp-overlay-title">知识点说明</span>
+        <button class="kp-overlay-close" onclick="document.getElementById('kp-overlay').hidden=true">×</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="data-section">
+      <div class="data-label">当前参数</div>
+      <div class="data-row"><span class="data-row-label">太阳赤纬 δ</span><span class="data-row-val" id="decl-val">—</span></div>
+      <div class="data-row"><span class="data-row-label">气压带偏移</span><span class="data-row-val" id="shift-val">—</span></div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">气压带与风带（当前位置）</div>
+      <div class="belt-list" id="belt-list"></div>
+    </div>
+
+    <div class="struggle-box">
+      <div class="struggle-label">认知冲突</div>
+      <div class="struggle-text">
+        北半球信风为<strong>东北信风</strong>，而非正东风——科里奥利力使北半球气流向右偏，南半球向左偏。<br><br>
+        把日期拖到夏至：副热带高压带北移至约 35°，地中海进入其控制，形成夏干气候。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ── KP docs ───────────────────────────────────────────────────────────────────
+const KP_DOCS = {
+  belts:`<strong>七个气压带、六个风带</strong><br>气压带（从赤道向极地）：赤道低压带(0°)、副热带高压带(±30°)、副极地低压带(±60°)、极地高压带(±90°)。<br>风带：信风带(0°-30°)、西风带(30°-60°)、极地东风带(60°-90°)。气压带和风带相间分布。`,
+  coriolis:`<strong>科里奥利力</strong>（地转偏向力）：北半球气流向右偏，南半球向左偏。<br>→ 北半球信风：东北风；南半球信风：东南风<br>→ 北半球西风带：西南风；南半球西风带：西北风<br>→ 北半球极地东风：东北风；南半球：东南风`,
+  shift:`<strong>季节移动</strong>：气压带风带随太阳直射点移动而整体南北偏移约 5~7°。<br>夏至：北移；冬至：南移。<br>影响：地中海气候、热带草原气候的干湿季节交替正是由此形成。`,
+  monsoon:`<strong>季风成因</strong>：海陆热力性质差异叠加气压带风带移动。<br>东亚夏季风：东南风（来自太平洋）；冬季风：西北风（来自西伯利亚）。<br>南亚夏季风：西南风（赤道低压带北移，越赤道气流偏转）。`,
+  climate:`<strong>气压带风带与气候</strong>：<br>热带雨林气候：赤道低压带控制，全年高温多雨<br>热带沙漠气候：副热带高压带控制，全年干热<br>地中海气候：夏受副热带高压，冬受西风带，夏干冬湿<br>温带海洋性气候：全年受西风带控制，温凉湿润`
+};
+document.getElementById('kp-sel').addEventListener('change', e=>{
+  const el = document.getElementById('kp-overlay');
+  document.getElementById('kp-body').innerHTML = KP_DOCS[e.target.value]||'';
+  el.hidden = false;
+});
+
+// ── Math ───────────────────────────────────────────────────────────────────────
+const DEG = Math.PI/180;
+function declination(doy){ return 23.44*Math.sin(DEG*(doy+284)*360/365.25); }
+
+// Belt definitions: [name, type(H/L), baseLatN, baseLatS, windName, windDirN_deg, windDirS_deg]
+// wind dir: angle FROM north (clockwise), that wind blows TOWARD (for arrow direction)
+// We draw wind arrows tangential to latitude circles
+const BELTS = [
+  {name:'赤道低压带', type:'L', lat:0, wind:'无风带（辐合）', windDir:null},
+  {name:'北半球信风带 (东北)', type:'wind', lat:15, hemi:1, wind:'东北信风', windAz:-45},
+  {name:'南半球信风带 (东南)', type:'wind', lat:-15, hemi:-1, wind:'东南信风', windAz:45},
+  {name:'北半球副热带高压带', type:'H', lat:30, hemi:1, wind:'副热带高压', windDir:null},
+  {name:'南半球副热带高压带', type:'H', lat:-30, hemi:-1, wind:'副热带高压', windDir:null},
+  {name:'北半球西风带', type:'wind', lat:45, hemi:1, wind:'西南风', windAz:-135},
+  {name:'南半球西风带', type:'wind', lat:-45, hemi:-1, wind:'西北风', windAz:135},
+  {name:'北半球副极地低压带', type:'L', lat:60, hemi:1, wind:'副极地低压', windDir:null},
+  {name:'南半球副极地低压带', type:'L', lat:-60, hemi:-1, wind:'副极地低压', windDir:null},
+  {name:'北半球极地东风带', type:'wind', lat:75, hemi:1, wind:'东北风', windAz:-45},
+  {name:'南半球极地东风带', type:'wind', lat:-75, hemi:-1, wind:'东南风', windAz:45},
+  {name:'北极高压带', type:'H', lat:90, hemi:1, wind:'极地高压', windDir:null},
+  {name:'南极高压带', type:'H', lat:-90, hemi:-1, wind:'极地高压', windDir:null},
+];
+
+// Belt coloring groups for render
+const BELT_BANDS = [
+  {latC:0, half:8, color:0x2255aa, alpha:0.25, type:'L'},   // equatorial low
+  {latC:30, half:8, color:0xaa4422, alpha:0.22, type:'H'},  // N subtropical high
+  {latC:-30, half:8, color:0xaa4422, alpha:0.22, type:'H'},
+  {latC:60, half:8, color:0x2255aa, alpha:0.22, type:'L'},  // N subpolar low
+  {latC:-60, half:8, color:0x2255aa, alpha:0.22, type:'L'},
+  {latC:88, half:5, color:0xaa4422, alpha:0.20, type:'H'},  // N polar high
+  {latC:-88, half:5, color:0xaa4422, alpha:0.20, type:'H'},
+];
+
+// ── Three.js setup ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setClearColor(0x050811,1);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;';
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45,2,0.1,100);
+camera.position.set(0,2,5);
+const controls = new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.05;
+controls.minDistance=2.5; controls.maxDistance=12;
+
+scene.add(new THREE.AmbientLight(0xffffff,0.8));
+const sunLight = new THREE.DirectionalLight(0xfff5e0,1.5);
+sunLight.position.set(5,3,5);
+scene.add(sunLight);
+
+const EARTH_R = 1.5;
+const earthGroup = new THREE.Group();
+scene.add(earthGroup);
+
+// Earth sphere
+const earthMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R,64,48),
+  new THREE.MeshPhongMaterial({color:0x1a2a44, specular:0x111122, shininess:20})
+);
+earthGroup.add(earthMesh);
+const loader = new THREE.TextureLoader();
+loader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_atmos_2048.jpg',
+  t=>{earthMesh.material.map=t;earthMesh.material.needsUpdate=true;});
+
+// Belt band meshes (will be updated on shift)
+const beltMeshes = [];
+const beltGroup = new THREE.Group();
+earthGroup.add(beltGroup);
+
+function makeLatBand(latC, halfWidth, color, alpha){
+  const la1 = (latC-halfWidth)*DEG, la2 = (latC+halfWidth)*DEG;
+  const geo = new THREE.SphereGeometry(EARTH_R+0.004, 64, 24, 0, Math.PI*2,
+    Math.PI/2-la2, la2-la1);
+  const mat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:alpha, side:THREE.FrontSide, depthWrite:false});
+  return new THREE.Mesh(geo, mat);
+}
+
+// Wind arrow group
+const windGroup = new THREE.Group();
+earthGroup.add(windGroup);
+
+// Labels group
+const labelsGroup = new THREE.Group();
+earthGroup.add(labelsGroup);
+
+// Axis
+earthGroup.add(new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-EARTH_R*1.5,0),new THREE.Vector3(0,EARTH_R*1.5,0)]),
+  new THREE.LineBasicMaterial({color:0x334466,transparent:true,opacity:0.4})
+));
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let doy = 172;
+function setDoy(d){ doy=d; document.getElementById('doy').value=d; update(); }
+window.setDoy = setDoy;
+
+let showBelts=true, showWinds=true, showCoriolis=true, showLabels=true;
+document.getElementById('lyr-belts').addEventListener('change',e=>{ showBelts=e.target.checked; update(); });
+document.getElementById('lyr-winds').addEventListener('change',e=>{ showWinds=e.target.checked; update(); });
+document.getElementById('lyr-coriolis').addEventListener('change',e=>{ showCoriolis=e.target.checked; update(); });
+document.getElementById('lyr-labels').addEventListener('change',e=>{ showLabels=e.target.checked; update(); });
+
+// Arrow helper: draw a curved arrow along latitude circle at given lat, at lon position
+function makeWindArrows(lat, azimuth, color){
+  // azimuth: angle in degrees that wind blows TOWARD from north (clockwise)
+  // We place 8 arrows evenly around the latitude circle
+  const grp = new THREE.Group();
+  const phi = lat*DEG;
+  const r = EARTH_R * Math.cos(phi);
+  const y = EARTH_R * Math.sin(phi);
+  const arrowLen = 0.18;
+  const N = 8;
+  for(let i=0;i<N;i++){
+    const lon = (i/N)*Math.PI*2;
+    // Origin point on surface
+    const ox = (EARTH_R+0.02)*Math.cos(phi)*Math.cos(lon);
+    const oy = (EARTH_R+0.02)*Math.sin(phi);
+    const oz = (EARTH_R+0.02)*Math.cos(phi)*Math.sin(lon);
+    // Arrow direction in local surface frame
+    // azimuth is angle from north, clockwise → in world: north=-Z(for lon=0), east=+X
+    // We need to convert azimuth to a 3D vector tangent to the surface
+    // North tangent at (lon): direction of increasing lat = (-sin(phi)*cos(lon), cos(phi), -sin(phi)*sin(lon))
+    // East tangent at (lon): direction of increasing lon = (-sin(lon), 0, cos(lon))
+    const az = (azimuth + (showCoriolis ? 0 : (lat>0?45:-45)))*DEG;
+    const northX=-Math.sin(phi)*Math.cos(lon), northY=Math.cos(phi), northZ=-Math.sin(phi)*Math.sin(lon);
+    const eastX=-Math.sin(lon), eastY=0, eastZ=Math.cos(lon);
+    const dx = Math.sin(az)*eastX + Math.cos(az)*northX;
+    const dy = Math.sin(az)*eastY + Math.cos(az)*northY;
+    const dz = Math.sin(az)*eastZ + Math.cos(az)*northZ;
+    const dir = new THREE.Vector3(dx,dy,dz).normalize();
+    const origin = new THREE.Vector3(ox,oy,oz);
+    // Draw line + cone tip
+    const pts=[origin.clone(), origin.clone().addScaledVector(dir,arrowLen)];
+    const lineMesh = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({color}));
+    grp.add(lineMesh);
+    // Cone at tip
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(0.025,0.06,8),
+      new THREE.MeshBasicMaterial({color})
+    );
+    cone.position.copy(origin.clone().addScaledVector(dir,arrowLen+0.03));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+    grp.add(cone);
+  }
+  return grp;
+}
+
+// ── Update ─────────────────────────────────────────────────────────────────────
+function update(){
+  const decl = declination(doy);
+  // Seasonal shift: belts move with sun, capped at ±7°
+  const shift = decl * (7/23.44);
+
+  document.getElementById('doy-val').textContent = doy;
+  document.getElementById('decl-val').textContent = decl.toFixed(2)+'°';
+  document.getElementById('shift-val').textContent = (shift>=0?'+':'')+shift.toFixed(1)+'°';
+
+  // Rebuild belt meshes
+  beltGroup.clear();
+  if(showBelts){
+    BELT_BANDS.forEach(b=>{
+      const latShifted = b.latC + (b.latC >= 0 ? shift : -shift);
+      const m = makeLatBand(latShifted, b.half, b.color, b.alpha);
+      beltGroup.add(m);
+    });
+  }
+
+  // Rebuild wind arrows
+  windGroup.clear();
+  if(showWinds){
+    const windDef = [
+      {lat:15+shift, az:-45, col:0x6db3d9},   // N trade easterly NE
+      {lat:-15-shift, az:45, col:0x6db3d9},    // S trade easterly SE
+      {lat:45+shift, az:-135, col:0xf4a853},   // N westerly SW
+      {lat:-45-shift, az:135, col:0xf4a853},   // S westerly NW
+      {lat:75+shift, az:-45, col:0xe85d4a},    // N polar E
+      {lat:-75-shift, az:45, col:0xe85d4a},    // S polar E
+    ];
+    windDef.forEach(w=>{
+      if(Math.abs(w.lat)>=90) return;
+      windGroup.add(makeWindArrows(w.lat, w.az, w.col));
+    });
+  }
+
+  // Rebuild labels
+  labelsGroup.clear();
+  if(showLabels){
+    const labelDefs = [
+      {name:'赤道低压带', lat:0+shift, col:'#6db3d9'},
+      {name:'北副热带高压', lat:30+shift, col:'#e85d4a'},
+      {name:'南副热带高压', lat:-30-shift, col:'#e85d4a'},
+      {name:'北副极地低压', lat:60+shift, col:'#6db3d9'},
+      {name:'南副极地低压', lat:-60-shift, col:'#6db3d9'},
+    ];
+    labelDefs.forEach(l=>{
+      if(Math.abs(l.lat)>88) return;
+      const phi = l.lat*DEG;
+      const div = document.createElement('div');
+      div.style.cssText=`font-family:monospace;font-size:10px;color:${l.col};white-space:nowrap;background:rgba(7,10,19,.75);padding:2px 5px;border-radius:2px;`;
+      div.textContent=l.name;
+      const lbl = new CSS2DObject(div);
+      lbl.position.set((EARTH_R+0.1)*Math.cos(phi)*1.1, (EARTH_R+0.1)*Math.sin(phi), 0);
+      labelsGroup.add(lbl);
+    });
+  }
+
+  // Belt list in right panel
+  const beltListEl = document.getElementById('belt-list');
+  const bands = [
+    {name:'赤道低压带',lat:0+shift,type:'L',wind:'辐合上升，多降水'},
+    {name:'北副热带高压带',lat:30+shift,type:'H',wind:'下沉，干旱'},
+    {name:'南副热带高压带',lat:-(30+shift),type:'H',wind:'下沉，干旱'},
+    {name:'北副极地低压带',lat:60+shift,type:'L',wind:'暖冷气团交汇，多降水'},
+    {name:'南副极地低压带',lat:-(60+shift),type:'L',wind:'暖冷气团交汇'},
+  ];
+  beltListEl.innerHTML = bands.map(b=>`
+    <div class="belt-item belt-${b.type}">
+      <div class="belt-label">${b.type==='H'?'高压带':'低压带'} · ${b.lat.toFixed(1)}°</div>
+      <div class="belt-name">${b.name}</div>
+      <div class="belt-wind">${b.wind}</div>
+    </div>`).join('');
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────────
+document.getElementById('doy').addEventListener('input', e=>{ doy=+e.target.value; update(); });
+
+// ── Resize ─────────────────────────────────────────────────────────────────────
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  renderer.setSize(w,h,false); labelRenderer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+// ── Animate ────────────────────────────────────────────────────────────────────
+let last=0;
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=(t-last)/1000; last=t;
+  earthGroup.rotation.y += dt*0.03;
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+update();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>磁层与太阳风 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .slider-row{margin-bottom:14px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-label{font-size:12px;color:var(--text-secondary);}
+  .slider-value{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);font-weight:500;}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:2px;background:var(--line-strong);outline:none;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent-warm);border-radius:50%;cursor:pointer;border:2px solid var(--bg-deep);box-shadow:0 0 0 1px var(--accent-warm);}
+  .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-top:6px;}
+  .check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer;user-select:none;}
+  .check input{appearance:none;width:14px;height:14px;border:1px solid var(--line-strong);border-radius:2px;cursor:pointer;position:relative;flex-shrink:0;}
+  .check input:checked{background:var(--accent-warm);border-color:var(--accent-warm);}
+  .check input:checked::after{content:'';position:absolute;left:3px;top:0;width:4px;height:8px;border:solid var(--bg-deep);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+  .formula-box{background:rgba(244,168,83,.06);border:1px solid rgba(244,168,83,.2);border-radius:2px;padding:12px;margin-top:8px;}
+  .formula-text{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);text-align:center;margin-bottom:5px;line-height:1.6;}
+  .formula-sub{font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#020812 0%,#010206 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay[hidden]{display:none;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:24px 20px;}
+  .panel-right::-webkit-scrollbar{width:4px;}.panel-right::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .data-section{margin-bottom:20px;}
+  .data-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);margin-bottom:8px;}
+  .data-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);}
+  .data-row-label{font-size:11px;color:var(--text-secondary);}
+  .data-row-val{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);}
+  .structure-list{margin-top:6px;}
+  .structure-item{padding:8px 10px;margin-bottom:5px;border-radius:2px;font-size:11px;border-left:2px solid;}
+  .structure-name{font-weight:500;color:var(--text-primary);margin-bottom:2px;}
+  .structure-desc{color:var(--text-secondary);font-size:10px;line-height:1.5;}
+  .struggle-box{background:rgba(232,93,74,.06);border:1px solid rgba(232,93,74,.25);border-radius:2px;padding:12px;margin-top:12px;}
+  .struggle-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.15em;color:var(--accent-hot);margin-bottom:6px;}
+  .struggle-text{font-size:12px;color:var(--text-secondary);line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-title">磁层与<em>太阳风</em></div>
+      <div class="brand-sub">Module 12 · Magnetosphere & Solar Wind</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-sel">
+        <option value="solar_wind">太阳风：高能粒子流</option>
+        <option value="magnetosphere">地球磁层：太阳风的屏障</option>
+        <option value="aurora">极光的成因</option>
+        <option value="dipole">偶极磁场与磁力线</option>
+        <option value="kp">磁暴：Kp指数</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">太阳风强度</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Kp 磁暴指数</span>
+          <span class="slider-value" id="kp-val">3</span>
+        </div>
+        <input type="range" id="sl-kp" min="0" max="9" value="3" step="1">
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:-6px;line-height:1.6;">
+        Kp≥5: 磁暴；Kp≥7: 强磁暴<br>
+        Kp越大，极光纬度越低（可达中纬度）
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">图层</div>
+      <div class="check-grid">
+        <label class="check"><input type="checkbox" id="lyr-field" checked> 磁力线</label>
+        <label class="check"><input type="checkbox" id="lyr-wind" checked> 太阳风</label>
+        <label class="check"><input type="checkbox" id="lyr-aurora" checked> 极光卵</label>
+        <label class="check"><input type="checkbox" id="lyr-bow" checked> 弓形激波</label>
+        <label class="check"><input type="checkbox" id="lyr-tail" checked> 磁尾</label>
+        <label class="check"><input type="checkbox" id="lyr-earth" checked> 地球</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">参数</div>
+      <div class="formula-box">
+        <div class="formula-text">弓形激波：~10–15 R⊕</div>
+        <div class="formula-text">磁层顶：日侧 ~10 R⊕</div>
+        <div class="formula-text">磁尾：夜侧 ~200 R⊕</div>
+        <div class="formula-sub">极光卵纬度：约65°–75°（宁静时）<br>磁暴时可降至45°甚至更低</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: 3D -->
+  <div class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay" hidden>
+      <div class="kp-overlay-header">
+        <span class="kp-overlay-title">知识点说明</span>
+        <button class="kp-overlay-close" onclick="document.getElementById('kp-overlay').hidden=true">×</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="data-section">
+      <div class="data-label">磁暴状态</div>
+      <div class="data-row"><span class="data-row-label">Kp 指数</span><span class="data-row-val" id="disp-kp">3</span></div>
+      <div class="data-row"><span class="data-row-label">磁暴级别</span><span class="data-row-val" id="disp-storm">宁静</span></div>
+      <div class="data-row"><span class="data-row-label">极光最低纬度</span><span class="data-row-val" id="disp-aurora-lat">~68°</span></div>
+      <div class="data-row"><span class="data-row-label">磁层顶距离</span><span class="data-row-val" id="disp-mp">~10 R⊕</span></div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">磁层结构</div>
+      <div class="structure-list">
+        <div class="structure-item" style="border-color:#e85d4a;background:rgba(232,93,74,.08);">
+          <div class="structure-name">弓形激波 Bow Shock</div>
+          <div class="structure-desc">太阳风在此突然减速，被地磁场偏转</div>
+        </div>
+        <div class="structure-item" style="border-color:#f4a853;background:rgba(244,168,83,.08);">
+          <div class="structure-name">磁层顶 Magnetopause</div>
+          <div class="structure-desc">磁压=太阳风压力处，磁层边界</div>
+        </div>
+        <div class="structure-item" style="border-color:#6db3d9;background:rgba(109,179,217,.08);">
+          <div class="structure-name">范艾伦辐射带</div>
+          <div class="structure-desc">被磁场捕获的高能粒子，内带(1-2R⊕)、外带(3-9R⊕)</div>
+        </div>
+        <div class="structure-item" style="border-color:#7dc48a;background:rgba(125,196,138,.08);">
+          <div class="structure-name">极光卵 Auroral Oval</div>
+          <div class="structure-desc">太阳风粒子沿磁力线进入高层大气，激发氧氮发光</div>
+        </div>
+        <div class="structure-item" style="border-color:#5a6577;background:rgba(90,101,119,.08);">
+          <div class="structure-name">磁尾 Magnetotail</div>
+          <div class="structure-desc">夜侧被吹成流线形，延伸数百R⊕</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="struggle-box">
+      <div class="struggle-label">认知冲突</div>
+      <div class="struggle-text">
+        极光并非"太阳光照到极地"——而是太阳风高能粒子（电子、质子）沿磁力线进入极区大气，撞击 O、N₂ 等分子使其激发发光。<br><br>
+        没有地磁场，太阳风会直接剥蚀地球大气（如火星）。地磁场是生命的保护伞。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const KP_DOCS={
+  solar_wind:`<strong>太阳风</strong>：太阳日冕持续向外喷发的等离子体流（主要是质子和电子）。速度约300–800 km/s，静止期约450 km/s。太阳耀斑/CME（日冕物质抛射）期间速度和密度大幅增加，引发磁暴。`,
+  magnetosphere:`<strong>地球磁层</strong>：地球磁场与太阳风的交互区域。日侧被压缩至约10个地球半径（R⊕），夜侧被吹成数百R⊕的磁尾。磁层保护地球生物圈免受太阳风和宇宙射线的直接轰击。`,
+  aurora:`<strong>极光成因</strong>：太阳风粒子沿开放磁力线进入极区（磁极附近），与80–300km高度的大气分子碰撞，使其激发后发光。<br>绿色：原子氧（~100km）；红色：原子氧（>200km）；蓝紫色：氮分子。`,
+  dipole:`<strong>偶极磁场</strong>：地球磁场近似为偶极场，磁轴与地球自转轴偏约11°。磁力线从南磁极出发，弯曲环绕地球，从北磁极进入。磁赤道处场线平行地面，极地处垂直地面。`,
+  kp:`<strong>Kp指数</strong>（行星际磁场指数）：0–9级衡量地磁活动。<br>Kp=0–3：宁静；Kp=4：活跃；Kp≥5：磁暴（G1）；Kp≥7：强磁暴（G3）；Kp=9：极端磁暴（G5）。<br>强磁暴可影响GPS、卫星、电网，但带来中低纬可见极光。`
+};
+document.getElementById('kp-sel').addEventListener('change',e=>{
+  const el=document.getElementById('kp-overlay');
+  document.getElementById('kp-body').innerHTML=KP_DOCS[e.target.value]||'';
+  el.hidden=false;
+});
+
+const DEG=Math.PI/180;
+const EARTH_R=1.0; // scene unit
+
+const canvas=document.getElementById('three-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setClearColor(0x010208,1);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth,canvas.clientHeight);
+labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;';
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,2,0.01,500);
+camera.position.set(15,8,15);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.05;
+controls.minDistance=3; controls.maxDistance=80;
+
+scene.add(new THREE.AmbientLight(0x112244,0.5));
+const sunDir=new THREE.Vector3(-1,0,0); // sun is to the -X direction
+const sunLight=new THREE.DirectionalLight(0xfff0d0,1.5);
+sunLight.position.copy(sunDir.clone().negate().multiplyScalar(50));
+scene.add(sunLight);
+
+// ── Background stars ────────────────────────────────────────────────────────
+const bgGeo=new THREE.BufferGeometry();
+const bgP=[];
+for(let i=0;i<1500;i++){const u=Math.random()*2-1,v=Math.random()*2-1,w=Math.random()*2-1;const l=Math.sqrt(u*u+v*v+w*w);bgP.push(u/l*200,v/l*200,w/l*200);}
+bgGeo.setAttribute('position',new THREE.Float32BufferAttribute(bgP,3));
+scene.add(new THREE.Points(bgGeo,new THREE.PointsMaterial({color:0xffffff,size:0.08,transparent:true,opacity:0.4})));
+
+// ── Earth ────────────────────────────────────────────────────────────────────
+const earthGroup=new THREE.Group(); scene.add(earthGroup);
+const earthMesh=new THREE.Mesh(new THREE.SphereGeometry(EARTH_R,48,32),
+  new THREE.MeshPhongMaterial({color:0x2244aa,emissive:0x112244,specular:0x111122,shininess:20}));
+earthGroup.add(earthMesh);
+const loader=new THREE.TextureLoader();
+loader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_atmos_2048.jpg',
+  t=>{earthMesh.material.map=t;earthMesh.material.needsUpdate=true;});
+// Tilt ~11° (mag axis)
+earthGroup.rotation.z=11*DEG;
+
+// ── Dipole field lines ────────────────────────────────────────────────────────
+const fieldGroup=new THREE.Group(); scene.add(fieldGroup);
+
+function buildDipoleLines(){
+  fieldGroup.clear();
+  // Dipole field lines: r = L * cos²(λ), where L is L-shell, λ is magnetic latitude
+  const L_shells=[1.5, 2, 3, 5, 8]; // L-shells (L=1 is surface)
+  const azimuths=[0,60,120,180,240,300]; // degrees around mag axis
+  L_shells.forEach(L=>{
+    azimuths.forEach(az_deg=>{
+      const az=az_deg*DEG;
+      const pts=[];
+      for(let i=0;i<=120;i++){
+        const lat=-90+i*180/120; // -90 to +90 magnetic lat
+        const latR=lat*DEG;
+        const r=L*EARTH_R*Math.cos(latR)*Math.cos(latR);
+        if(r<EARTH_R*0.98) continue;
+        // Convert mag lat/az to 3D (mag axis = Y in local group)
+        const x=r*Math.cos(latR)*Math.cos(az);
+        const y=r*Math.sin(latR);
+        const z=r*Math.cos(latR)*Math.sin(az);
+        pts.push(new THREE.Vector3(x,y,z));
+      }
+      if(pts.length<2) return;
+      const col=L<=2?0x4488ff:(L<=5?0x6699ff:0x334488);
+      const op=L<=3?0.6:0.35;
+      fieldGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op})));
+    });
+  });
+}
+buildDipoleLines();
+
+// ── Bow shock (compressed sphere day side, elongated night side) ──────────────
+const bowGroup=new THREE.Group(); scene.add(bowGroup);
+function buildBowShock(kp){
+  bowGroup.clear();
+  const standoff=10-kp*0.5; // standoff distance in R⊕ (shrinks with Kp)
+  const pts=[]; const N=128;
+  for(let i=0;i<=N;i++){
+    const t=i/N*Math.PI*2;
+    const x=standoff*Math.cos(t)*EARTH_R;
+    const y=standoff*1.4*Math.sin(t)*EARTH_R;
+    pts.push(new THREE.Vector3(x,y,0));
+  }
+  bowGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0xe85d4a,transparent:true,opacity:0.6})));
+  const div=document.createElement('div');
+  div.style.cssText='font-family:monospace;font-size:10px;color:#e85d4a;background:rgba(7,10,19,.8);padding:2px 5px;border-radius:2px;white-space:nowrap;';
+  div.textContent=`弓形激波 (${standoff.toFixed(1)}R⊕)`;
+  const lbl=new CSS2DObject(div);
+  lbl.position.set(standoff*EARTH_R*0.7, standoff*EARTH_R*0.9, 0);
+  bowGroup.add(lbl);
+}
+buildBowShock(3);
+
+// ── Magnetopause ──────────────────────────────────────────────────────────────
+const mpGroup=new THREE.Group(); scene.add(mpGroup);
+function buildMagnetopause(kp){
+  mpGroup.clear();
+  const r_day=(9-kp*0.4)*EARTH_R;
+  // Day side: compressed; night side: elongated
+  const pts=[]; const N=200;
+  for(let i=0;i<=N;i++){
+    const t=(i/N)*Math.PI*2;
+    // Rough magnetopause shape: Newtonian approximation
+    const cosT=Math.cos(t);
+    // r = r_day*(2/(1+cosT))^(1/6) for t < pi (day), else stretch
+    let r;
+    if(t<=Math.PI) r=r_day*Math.pow(2/(1+cosT+0.001),0.15);
+    else r=r_day*(1+3*Math.pow(Math.abs(t-Math.PI)/Math.PI,2));
+    r=Math.min(r, 25*EARTH_R);
+    pts.push(new THREE.Vector3(r*cosT, r*Math.sin(t), 0));
+  }
+  mpGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0xf4a853,transparent:true,opacity:0.5})));
+  const div=document.createElement('div');
+  div.style.cssText='font-family:monospace;font-size:10px;color:#f4a853;background:rgba(7,10,19,.8);padding:2px 5px;border-radius:2px;';
+  div.textContent='磁层顶';
+  const lbl=new CSS2DObject(div);
+  lbl.position.set(r_day*0.8, r_day*0.5, 0);
+  mpGroup.add(lbl);
+}
+buildMagnetopause(3);
+
+// ── Magnetotail ───────────────────────────────────────────────────────────────
+const tailGroup=new THREE.Group(); scene.add(tailGroup);
+function buildTail(){
+  tailGroup.clear();
+  const pts1=[],pts2=[];
+  for(let x=0;x<=40;x+=0.5){
+    pts1.push(new THREE.Vector3(-x*EARTH_R, 8*EARTH_R, 0));
+    pts2.push(new THREE.Vector3(-x*EARTH_R,-8*EARTH_R, 0));
+  }
+  tailGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts1),new THREE.LineBasicMaterial({color:0x334488,transparent:true,opacity:0.5})));
+  tailGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts2),new THREE.LineBasicMaterial({color:0x334488,transparent:true,opacity:0.5})));
+  const div=document.createElement('div');
+  div.style.cssText='font-family:monospace;font-size:10px;color:#5a6577;background:rgba(7,10,19,.8);padding:2px 5px;border-radius:2px;';
+  div.textContent='磁尾 (向夜侧延伸)';
+  const lbl=new CSS2DObject(div);
+  lbl.position.set(-20*EARTH_R, 9*EARTH_R, 0);
+  tailGroup.add(lbl);
+}
+buildTail();
+
+// ── Aurora oval ───────────────────────────────────────────────────────────────
+const auroraGroup=new THREE.Group(); scene.add(auroraGroup);
+function buildAurora(kp){
+  auroraGroup.clear();
+  // Aurora oval latitude: ~75° at Kp=0, decreases by ~3.3° per Kp level
+  const auroraLat=75-kp*3.3;
+  const latR=auroraLat*DEG;
+  const r=EARTH_R*1.02;
+  const ptsN=[],ptsS=[];
+  const N=128;
+  for(let i=0;i<=N;i++){
+    const az=(i/N)*Math.PI*2;
+    ptsN.push(new THREE.Vector3(r*Math.cos(latR)*Math.cos(az), r*Math.sin(latR), r*Math.cos(latR)*Math.sin(az)));
+    ptsS.push(new THREE.Vector3(r*Math.cos(latR)*Math.cos(az),-r*Math.sin(latR), r*Math.cos(latR)*Math.sin(az)));
+  }
+  const auroraCol=kp<=3?0x00ff88:(kp<=6?0x88ff44:0xff4488);
+  auroraGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsN),new THREE.LineBasicMaterial({color:auroraCol,transparent:true,opacity:0.8})));
+  auroraGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsS),new THREE.LineBasicMaterial({color:auroraCol,transparent:true,opacity:0.8})));
+  // Thicker glow ring
+  const ringGeo=new THREE.TorusGeometry(r*Math.cos(latR), 0.08, 8, 128);
+  const ringMat=new THREE.MeshBasicMaterial({color:auroraCol,transparent:true,opacity:0.25});
+  const ringN=new THREE.Mesh(ringGeo,ringMat);
+  ringN.position.y=r*Math.sin(latR);
+  ringN.rotation.x=Math.PI/2;
+  auroraGroup.add(ringN);
+  const ringS=ringN.clone();
+  ringS.position.y=-r*Math.sin(latR);
+  auroraGroup.add(ringS);
+}
+buildAurora(3);
+
+// ── Solar wind particles ───────────────────────────────────────────────────────
+const windGroup=new THREE.Group(); scene.add(windGroup);
+const WIND_COUNT=200;
+const windPositions=new Float32Array(WIND_COUNT*3);
+const windGeo=new THREE.BufferGeometry();
+for(let i=0;i<WIND_COUNT;i++){
+  windPositions[i*3]=30*Math.random()-5; // start from x=+25..+30 (sun side)
+  windPositions[i*3+1]=(Math.random()*2-1)*20;
+  windPositions[i*3+2]=(Math.random()*2-1)*20;
+}
+windGeo.setAttribute('position',new THREE.Float32BufferAttribute(windPositions,3));
+windGroup.add(new THREE.Points(windGeo,new THREE.PointsMaterial({color:0xffdd88,size:0.1,transparent:true,opacity:0.6})));
+
+// ── Layer toggles ──────────────────────────────────────────────────────────────
+document.getElementById('lyr-field').addEventListener('change',e=>fieldGroup.visible=e.target.checked);
+document.getElementById('lyr-wind').addEventListener('change',e=>windGroup.visible=e.target.checked);
+document.getElementById('lyr-aurora').addEventListener('change',e=>auroraGroup.visible=e.target.checked);
+document.getElementById('lyr-bow').addEventListener('change',e=>bowGroup.visible=e.target.checked);
+document.getElementById('lyr-tail').addEventListener('change',e=>tailGroup.visible=e.target.checked);
+document.getElementById('lyr-earth').addEventListener('change',e=>earthGroup.visible=e.target.checked);
+
+// ── Kp slider ─────────────────────────────────────────────────────────────────
+let kpVal=3;
+document.getElementById('sl-kp').addEventListener('input',e=>{
+  kpVal=+e.target.value;
+  document.getElementById('kp-val').textContent=kpVal;
+  buildBowShock(kpVal);
+  buildMagnetopause(kpVal);
+  buildAurora(kpVal);
+  updateReadout(kpVal);
+});
+
+function updateReadout(kp){
+  document.getElementById('disp-kp').textContent=kp;
+  const levels=['宁静','宁静','宁静','活跃','活跃','G1磁暴','G2磁暴','G3磁暴','G4磁暴','G5极端'];
+  document.getElementById('disp-storm').textContent=levels[kp]||'—';
+  const auroraLat=(75-kp*3.3).toFixed(1);
+  document.getElementById('disp-aurora-lat').textContent='~'+auroraLat+'°';
+  const mpDist=(9-kp*0.4).toFixed(1);
+  document.getElementById('disp-mp').textContent='~'+mpDist+' R⊕';
+}
+updateReadout(3);
+
+// ── Resize & animate ───────────────────────────────────────────────────────────
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  renderer.setSize(w,h,false); labelRenderer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+let last=0;
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=(t-last)/1000; last=t;
+  // Earth slow rotation
+  earthGroup.rotation.y += dt*0.1;
+  // Animate solar wind particles: move in -X direction
+  const pos=windGeo.attributes.position;
+  for(let i=0;i<WIND_COUNT;i++){
+    pos.setX(i, pos.getX(i)-dt*8);
+    if(pos.getX(i)<-30){ // reset to sun side
+      pos.setX(i, 28+Math.random()*4);
+      pos.setY(i,(Math.random()*2-1)*20);
+      pos.setZ(i,(Math.random()*2-1)*20);
+    }
+  }
+  pos.needsUpdate=true;
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

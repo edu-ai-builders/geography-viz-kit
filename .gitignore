@@ -1,0 +1,5 @@
+.DS_Store
+.claude/
+*.webp
+pics/
+claude history.txt

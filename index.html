@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>地理与天文 · 3D交互教学工具集</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #070a13;
+    --bg-panel: rgba(12, 17, 28, 0.82);
+    --bg-panel-solid: #0c111c;
+    --bg-card: rgba(14, 20, 34, 0.7);
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.18);
+    --text-primary: #e8ecf3;
+    --text-secondary: #8a95a8;
+    --text-dim: #5a6577;
+    --accent-warm: #f4a853;
+    --accent-hot: #e85d4a;
+    --accent-cool: #6db3d9;
+    --accent-green: #7dc48a;
+    --font-display: 'Fraunces', 'Noto Serif SC', serif;
+    --font-sans: 'Noto Sans SC', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    min-height: 100%;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 10%, rgba(109, 179, 217, 0.07), transparent 55%),
+      radial-gradient(ellipse at 85% 85%, rgba(244, 168, 83, 0.05), transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(232, 93, 74, 0.03), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    position: relative;
+    z-index: 1;
+    padding: 64px 48px 48px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .site-kicker {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .site-kicker::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--accent-warm);
+  }
+  .site-title {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+  }
+  .site-title em {
+    font-style: italic;
+    color: var(--accent-warm);
+    font-weight: 400;
+  }
+  .site-desc {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    max-width: 640px;
+  }
+  .site-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-num {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--accent-warm);
+    font-weight: 600;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  /* ── Phase sections ── */
+  .content {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 48px 80px;
+  }
+  .phase {
+    margin-bottom: 56px;
+  }
+  .phase-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .phase-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .phase-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    padding: 3px 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 2px;
+  }
+  .phase-count {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── Card grid ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 24px 22px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent-warm);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .card:hover {
+    border-color: var(--line-strong);
+    background: rgba(14, 20, 34, 0.95);
+  }
+  .card:hover::before { opacity: 1; }
+  .card.disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .card-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent-warm);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-badge {
+    font-size: 9px;
+    color: var(--text-dim);
+    border: 1px solid var(--line-strong);
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.15em;
+  }
+  .card-badge.ready {
+    border-color: rgba(125, 196, 138, 0.5);
+    color: var(--accent-green);
+  }
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+  .card-title em {
+    font-style: italic;
+    color: var(--accent-warm);
+    font-weight: 400;
+  }
+  .card-subtitle {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    flex: 1;
+    margin-bottom: 18px;
+  }
+  .card-concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 16px;
+  }
+  .concept-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--line);
+    padding: 2px 7px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+  .card-enter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--accent-warm);
+    color: #1a1208;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+    align-self: flex-start;
+    transition: background 0.12s ease;
+  }
+  .card:hover .card-enter { background: #f7b868; }
+  .card-enter-soon {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    align-self: flex-start;
+  }
+
+  /* ── Footer ── */
+  .site-footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--line);
+    padding: 28px 48px;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 768px) {
+    .site-header, .content { padding-left: 24px; padding-right: 24px; }
+    .site-footer { padding-left: 24px; padding-right: 24px; flex-direction: column; gap: 8px; }
+    .card-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-kicker">Geo · Astro · 3D Interactive Teaching</div>
+  <h1 class="site-title">地理与天文<br><em>3D 交互教学工具集</em></h1>
+  <p class="site-desc">光真实感地球 · 天文力学 · 大气海洋 · 全程中文 · 单文件可离线运行<br>适用于初中至大学地理、物理、天文课程的课堂演示与自主探究。</p>
+  <div class="site-stats">
+    <div class="stat"><span class="stat-num">12</span><span class="stat-label">交互模块</span></div>
+    <div class="stat"><span class="stat-num">40+</span><span class="stat-label">知识点覆盖</span></div>
+    <div class="stat"><span class="stat-num">3</span><span class="stat-label">学段（初中·高中·大学）</span></div>
+    <div class="stat"><span class="stat-num">0</span><span class="stat-label">依赖 · 纯浏览器运行</span></div>
+  </div>
+</header>
+
+<main class="content">
+
+  <!-- Phase 1 -->
+  <section class="phase">
+    <div class="phase-header">
+      <h2 class="phase-title">地球运动基础</h2>
+      <span class="phase-tag">Phase 1 · 必修一</span>
+      <span class="phase-count">模块 01–05</span>
+    </div>
+    <div class="card-grid">
+
+      <a class="card" href="./01-earth-rotation.html">
+        <div class="card-num">Module 01 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">地球<em>自转</em></div>
+        <div class="card-subtitle">Earth Rotation</div>
+        <div class="card-desc">实时3D光真实感地球：地方时与时区、晨昏圈、自转方向与科氏力、回归线与极圈。城市时差、昼长、太阳直射点实时数据面板。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">地方时</span>
+          <span class="concept-tag">时区</span>
+          <span class="concept-tag">晨昏圈</span>
+          <span class="concept-tag">科氏力</span>
+          <span class="concept-tag">回归线</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./02-earth-revolution.html">
+        <div class="card-num">Module 02 <span class="card-badge ready">已发布 ✓</span></div>
+        <div class="card-title">地球<em>公转</em></div>
+        <div class="card-subtitle">Earth Revolution & Seasons</div>
+        <div class="card-desc">椭圆轨道 · 黄赤交角 · 二分二至 · 直射点回归运动。黄赤交角可调——拖到0°四季消失，直观验证季节成因。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">黄赤交角</span>
+          <span class="concept-tag">二分二至</span>
+          <span class="concept-tag">直射点</span>
+          <span class="concept-tag">近远日点</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./03-solar-altitude.html">
+        <div class="card-num">Module 03 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">正午<em>太阳高度</em></div>
+        <div class="card-subtitle">Solar Noon Altitude</div>
+        <div class="card-desc">H = 90° − |φ − δ| 的几何直觉。纬度×日期→高度角实时曲线。验证极点并非高度最小之处。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">H = 90°−|φ−δ|</span>
+          <span class="concept-tag">纬度效应</span>
+          <span class="concept-tag">季节效应</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./04-shadow.html">
+        <div class="card-num">Module 04 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">影子<em>朝向与长短</em></div>
+        <div class="card-subtitle">Shadow Direction & Length</div>
+        <div class="card-desc">L = h/tan(H) 的3D几何演示。赤道春分正午：影长为零。南半球正午影朝正北——打破"影子总朝北"的误区。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">影长公式</span>
+          <span class="concept-tag">朝向规律</span>
+          <span class="concept-tag">南北半球差异</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./05-solar-path.html">
+        <div class="card-num">Module 05 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">太阳<em>视运动</em></div>
+        <div class="card-subtitle">Apparent Solar Motion</div>
+        <div class="card-desc">天球穹顶视角：三条弧线（夏至·二分·冬至）同时展示。日出日落方位角随纬度和日期实时变化。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">日出方位</span>
+          <span class="concept-tag">天球弧线</span>
+          <span class="concept-tag">极昼轨迹</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- Phase 2 -->
+  <section class="phase">
+    <div class="phase-header">
+      <h2 class="phase-title">大气与海洋</h2>
+      <span class="phase-tag">Phase 2 · 必修一/二综合</span>
+      <span class="phase-count">模块 06–08</span>
+    </div>
+    <div class="card-grid">
+
+      <a class="card" href="./06-day-length.html">
+        <div class="card-num">Module 06 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">昼夜<em>长短变化</em></div>
+        <div class="card-subtitle">Day Length Variation</div>
+        <div class="card-desc">纬度-日期昼长热图。极圈以内极昼极夜范围随季节变化。cos H₀ = −tan φ·tan δ 的直觉可视化。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">昼长公式</span>
+          <span class="concept-tag">极昼极夜</span>
+          <span class="concept-tag">纬度效应</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./07-atmospheric-circulation.html">
+        <div class="card-num">Module 07 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">气压带<em>与风带</em></div>
+        <div class="card-subtitle">Pressure Belts & Wind Zones</div>
+        <div class="card-desc">行星风系随季节南北移动。科氏力开关：关闭时风直穿等压线，开启时风平行等压线——理解季风成因。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">行星风系</span>
+          <span class="concept-tag">科氏力</span>
+          <span class="concept-tag">季风</span>
+          <span class="concept-tag">哈德利环流</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./08-ocean-currents.html">
+        <div class="card-num">Module 08 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">全球<em>洋流</em></div>
+        <div class="card-subtitle">Ocean Currents</div>
+        <div class="card-desc">冷暖洋流流线覆盖全球，渔场与沙漠标注。大西洋对比太平洋——证明螺旋规律由行星风系决定而非地形。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">副热带环流</span>
+          <span class="concept-tag">冷暖流</span>
+          <span class="concept-tag">渔场</span>
+          <span class="concept-tag">气候影响</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- Phase 3 -->
+  <section class="phase">
+    <div class="phase-header">
+      <h2 class="phase-title">天文与宇宙</h2>
+      <span class="phase-tag">Phase 3 · 大学 · 竞赛</span>
+      <span class="phase-count">模块 09–12</span>
+    </div>
+    <div class="card-grid">
+
+      <a class="card" href="./09-celestial-coordinates.html">
+        <div class="card-num">Module 09 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">赤道<em>坐标系</em></div>
+        <div class="card-subtitle">Equatorial Coordinates</div>
+        <div class="card-desc">天球、赤道面、黄道面（夹角23.4°）、春分点定义。太阳沿黄道年运动动画，赤纬与季节一一对应。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">赤经赤纬</span>
+          <span class="concept-tag">黄道</span>
+          <span class="concept-tag">春分点</span>
+          <span class="concept-tag">二分二至</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./10-kepler-orbits.html">
+        <div class="card-num">Module 10 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">开普勒<em>三定律</em></div>
+        <div class="card-subtitle">Kepler's Laws of Orbital Motion</div>
+        <div class="card-desc">可调离心率椭圆轨道；面积定律实时扫描；T²∝a³散点图。近日点速度最大——12月底地球居然比6月快！</div>
+        <div class="card-concepts">
+          <span class="concept-tag">椭圆轨道</span>
+          <span class="concept-tag">面积定律</span>
+          <span class="concept-tag">T²∝a³</span>
+          <span class="concept-tag">轨道速度</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./11-solar-system-scale.html">
+        <div class="card-num">Module 11 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">太阳系<em>比例模型</em></div>
+        <div class="card-subtitle">Solar System Scale Model</div>
+        <div class="card-desc">线性/对数尺度可切换。线性模式：海王星在屏幕边缘，地月距离几乎不可见——尺度震撼。8颗行星真实相对大小。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">真实比例</span>
+          <span class="concept-tag">对数尺度</span>
+          <span class="concept-tag">行星轨道</span>
+          <span class="concept-tag">小行星带</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+      <a class="card" href="./12-magnetosphere.html">
+        <div class="card-num">Module 12 <span class="card-badge ready">已发布</span></div>
+        <div class="card-title">磁层与<em>太阳风</em></div>
+        <div class="card-subtitle">Magnetosphere & Solar Wind</div>
+        <div class="card-desc">地磁偶极子场线 · 太阳风绕流 · 极光卵形带。极光发生在磁纬60-70°而非极点——磁极与地理极的差异。</div>
+        <div class="card-concepts">
+          <span class="concept-tag">磁层</span>
+          <span class="concept-tag">太阳风</span>
+          <span class="concept-tag">极光带</span>
+          <span class="concept-tag">磁极</span>
+        </div>
+        <span class="card-enter">进入演示 →</span>
+      </a>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <span>Geo · Astro · Viz Kit · 2026</span>
+  <span>Three.js r160 · 单文件 · 零安装 · 可离线</span>
+</footer>
+
+</body>
+</html>

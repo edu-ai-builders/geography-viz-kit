@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>太阳系比例模型 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:300px 1fr 260px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 20px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:22px;}
+  .brand-title{font-family:var(--font-display);font-size:22px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:5px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:18px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:10px 12px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 12px center;background-size:10px;}
+  .kp-select option{background:var(--bg-panel-solid);}
+  .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:6px;}
+  .check{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-secondary);cursor:pointer;user-select:none;}
+  .check input{appearance:none;width:13px;height:13px;border:1px solid var(--line-strong);border-radius:2px;cursor:pointer;position:relative;flex-shrink:0;}
+  .check input:checked{background:var(--accent-warm);border-color:var(--accent-warm);}
+  .check input:checked::after{content:'';position:absolute;left:2px;top:0;width:4px;height:7px;border:solid var(--bg-deep);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+  .btn{padding:7px 10px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:12px;cursor:pointer;border-radius:2px;width:100%;margin-bottom:6px;text-align:left;}
+  .btn:hover{border-color:var(--accent-warm);color:var(--text-primary);}
+  .btn.active{border-color:var(--accent-warm);color:var(--accent-warm);}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#020510 0%,#010208 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay[hidden]{display:none;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:24px 18px;}
+  .panel-right::-webkit-scrollbar{width:4px;}.panel-right::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .data-section{margin-bottom:18px;}
+  .data-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);margin-bottom:6px;}
+  .planet-card{padding:8px 10px;margin-bottom:5px;border-radius:2px;border:1px solid var(--line);cursor:pointer;transition:border-color .12s;}
+  .planet-card:hover,.planet-card.active{border-color:var(--line-strong);}
+  .planet-card-row{display:flex;justify-content:space-between;align-items:center;}
+  .planet-card-name{font-size:12px;color:var(--text-primary);}
+  .planet-card-dist{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);}
+  .planet-card-size{font-size:10px;color:var(--text-secondary);margin-top:2px;}
+  .scale-toggle{display:flex;gap:8px;margin-bottom:12px;}
+  .scale-btn{flex:1;padding:8px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-mono);font-size:10px;cursor:pointer;border-radius:2px;text-align:center;text-transform:uppercase;letter-spacing:.1em;}
+  .scale-btn.active{background:rgba(244,168,83,.12);border-color:var(--accent-warm);color:var(--accent-warm);}
+  .struggle-box{background:rgba(232,93,74,.06);border:1px solid rgba(232,93,74,.25);border-radius:2px;padding:12px;margin-top:10px;}
+  .struggle-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.15em;color:var(--accent-hot);margin-bottom:6px;}
+  .struggle-text{font-size:11px;color:var(--text-secondary);line-height:1.65;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-title">太阳系<em>比例模型</em></div>
+      <div class="brand-sub">Module 11 · Solar System Scale</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-sel">
+        <option value="scale">真实比例：太阳系有多空旷</option>
+        <option value="sizes">行星大小对比</option>
+        <option value="inner">内太阳系：类地行星</option>
+        <option value="outer">外太阳系：气态巨星</option>
+        <option value="voyager">旅行者1号的旅程</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">距离比例尺</div>
+      <div class="scale-toggle">
+        <button class="scale-btn active" id="btn-log" onclick="setScale('log')">对数</button>
+        <button class="scale-btn" id="btn-lin" onclick="setScale('linear')">线性</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6;">
+        对数比例：显示所有行星。<br>
+        线性比例：真实距离——外行星几乎看不见！
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">大小比例尺</div>
+      <div class="check-grid" style="grid-template-columns:1fr;">
+        <label class="check"><input type="checkbox" id="sz-real"> 真实相对大小（极小！）</label>
+        <label class="check"><input type="checkbox" id="sz-orbits" checked> 显示轨道圆</label>
+        <label class="check"><input type="checkbox" id="sz-labels" checked> 名称标注</label>
+        <label class="check"><input type="checkbox" id="sz-animate" checked> 轨道动画</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">快速跳转</div>
+      <button class="btn" onclick="focusPlanet(0)">☀ 太阳系全景</button>
+      <button class="btn" onclick="focusPlanet(3)">🌍 地球 (1 AU)</button>
+      <button class="btn" onclick="focusPlanet(5)">🪐 木星 (5.2 AU)</button>
+      <button class="btn" onclick="focusPlanet(7)">⬡ 海王星 (30 AU)</button>
+    </div>
+  </div>
+
+  <!-- CENTER: 3D -->
+  <div class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay" hidden>
+      <div class="kp-overlay-header">
+        <span class="kp-overlay-title">知识点说明</span>
+        <button class="kp-overlay-close" onclick="document.getElementById('kp-overlay').hidden=true">×</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="data-section">
+      <div class="data-label">八大行星</div>
+      <div id="planet-list"></div>
+    </div>
+    <div class="struggle-box">
+      <div class="struggle-label">认知冲突</div>
+      <div class="struggle-text">
+        切换到<strong>线性比例</strong>：如果太阳是一个篮球（直径24cm），地球距离约26米，而海王星距离约800米——几乎一公里之外，且地球是一颗绿豆大小（2.2mm）。<br><br>
+        太阳系 99.86% 的质量在太阳，其余全部行星加起来不足 0.14%。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const KP_DOCS={
+  scale:`<strong>太阳系的空旷</strong>：99.9%以上的体积是真空。如果把太阳缩小到1米直径，地球在105米处，直径约9mm；海王星在3.2km处，直径约37mm。行星在太阳系中如同针尖落在足球场上。`,
+  sizes:`<strong>行星大小对比</strong>：太阳直径约139.2万km。<br>最大行星：木星（太阳1/10，地球11倍）。<br>地球直径：12,742km。<br>最小行星：水星（地球0.38倍）。<br>如果木星是篮球，地球是高尔夫球，水星是弹珠。`,
+  inner:`<strong>内太阳系（类地行星）</strong>：水、金、地、火。固态岩石行星，密度大，半径小，距日近（0.39–1.52 AU）。相互间距在数百万到数亿km。`,
+  outer:`<strong>外太阳系（气态巨星）</strong>：木、土、天王、海王。体积庞大，密度低，主要由氢氦气体/冰组成。距日5.2–30AU，围绕太阳运行周期11–165年。`,
+  voyager:`<strong>旅行者1号</strong>：1977年发射，已飞行约230亿km（约153AU）。2012年进入星际空间（日球层顶），是人类制造的最远飞行器。以当前速度飞往最近恒星（4.2光年）需约7.5万年。`
+};
+document.getElementById('kp-sel').addEventListener('change',e=>{
+  const el=document.getElementById('kp-overlay');
+  document.getElementById('kp-body').innerHTML=KP_DOCS[e.target.value]||'';
+  el.hidden=false;
+});
+
+// ── Planet data ────────────────────────────────────────────────────────────────
+const PLANETS=[
+  {name:'水星', zh:'Mercury', a:0.387, r_km:2439, color:0xa0a0a0, period:0.241, e:0.206},
+  {name:'金星', zh:'Venus',   a:0.723, r_km:6052, color:0xddc080, period:0.615, e:0.007},
+  {name:'地球', zh:'Earth',   a:1.000, r_km:6371, color:0x4488cc, period:1.000, e:0.017},
+  {name:'火星', zh:'Mars',    a:1.524, r_km:3390, color:0xcc5533, period:1.881, e:0.093},
+  {name:'木星', zh:'Jupiter', a:5.203, r_km:69911, color:0xcc9944, period:11.86, e:0.049},
+  {name:'土星', zh:'Saturn',  a:9.537, r_km:58232, color:0xddcc88, period:29.46, e:0.057},
+  {name:'天王星',zh:'Uranus', a:19.19, r_km:25362, color:0x88ddee, period:84.01, e:0.046},
+  {name:'海王星',zh:'Neptune',a:30.07, r_km:24622, color:0x4466cc, period:164.8, e:0.010},
+];
+const SUN_R_KM=695700;
+
+let scaleMode='log'; // 'log' or 'linear'
+let useRealSizes=false;
+let showOrbits=true, showLabels=true, doAnimate=true;
+
+// Distance scale (scene units per AU)
+const LOG_SCALE=3; // multiplied by log(1+a)
+const LIN_SCALE=0.15; // AU → scene units in linear mode
+
+function distanceToScene(a_AU){
+  if(scaleMode==='log') return LOG_SCALE*Math.log10(1+a_AU)*8;
+  return a_AU*LIN_SCALE;
+}
+function radiusToScene(r_km, isReal){
+  if(!isReal) return 0.12; // display size
+  // True scale: sun=0.5 units → r = 0.5*(r_km/SUN_R_KM)
+  return 0.5*r_km/SUN_R_KM;
+}
+
+// ── Three.js ──────────────────────────────────────────────────────────────────
+const canvas=document.getElementById('three-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setClearColor(0x010208,1);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth,canvas.clientHeight);
+labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;';
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(50,2,0.0001,2000);
+camera.position.set(0,15,20);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.05;
+
+scene.add(new THREE.AmbientLight(0x112244,0.4));
+const sunLight=new THREE.PointLight(0xfff5d0,3,0);
+scene.add(sunLight);
+
+// Background stars
+const bgGeo=new THREE.BufferGeometry();
+const bgP=[];
+for(let i=0;i<2000;i++){
+  const u=Math.random()*2-1,v=Math.random()*2-1,w=Math.random()*2-1;
+  const l=Math.sqrt(u*u+v*v+w*w);
+  bgP.push(u/l*200,v/l*200,w/l*200);
+}
+bgGeo.setAttribute('position',new THREE.Float32BufferAttribute(bgP,3));
+scene.add(new THREE.Points(bgGeo,new THREE.PointsMaterial({color:0xffffff,size:0.08,transparent:true,opacity:0.5})));
+
+// Sun
+const sunSize=0.5;
+const sunMesh=new THREE.Mesh(new THREE.SphereGeometry(sunSize,32,24),new THREE.MeshBasicMaterial({color:0xffe080}));
+scene.add(sunMesh);
+const sunDiv=document.createElement('div');
+sunDiv.style.cssText='font-family:monospace;font-size:11px;color:#ffe080;background:rgba(5,8,17,.8);padding:2px 6px;border-radius:2px;';
+sunDiv.textContent='太阳';
+const sunLbl=new CSS2DObject(sunDiv); sunLbl.position.set(0,0.7,0);
+sunMesh.add(sunLbl);
+
+// Planet objects
+const planetObjects=PLANETS.map((p,i)=>{
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),new THREE.MeshPhongMaterial({color:p.color,emissive:new THREE.Color(p.color).multiplyScalar(0.15)}));
+  scene.add(mesh);
+  // Label
+  const div=document.createElement('div');
+  div.style.cssText=`font-family:monospace;font-size:10px;color:#8a95a8;background:rgba(5,8,17,.75);padding:1px 5px;border-radius:2px;white-space:nowrap;`;
+  div.textContent=p.name;
+  const lbl=new CSS2DObject(div);
+  lbl.position.set(0,0.2,0);
+  mesh.add(lbl);
+  // Orbit ring
+  const pts=[]; const N=256;
+  for(let j=0;j<=N;j++){ const th=j/N*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(th),0,Math.sin(th))); }
+  const orbitLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0x2a3a5a,transparent:true,opacity:0.5}));
+  scene.add(orbitLine);
+  return {mesh, lbl, div, orbitLine, theta:Math.random()*Math.PI*2};
+});
+
+// ── Rebuild positions ──────────────────────────────────────────────────────────
+function rebuild(){
+  planetObjects.forEach((obj,i)=>{
+    const p=PLANETS[i];
+    const d=distanceToScene(p.a);
+    const sz=radiusToScene(p.r_km, useRealSizes);
+    obj.mesh.scale.setScalar(sz);
+    // Orbit ring scale
+    obj.orbitLine.visible=showOrbits;
+    obj.orbitLine.scale.setScalar(d);
+    // Update planet position based on current theta
+    const th=obj.theta;
+    obj.mesh.position.set(d*Math.cos(th),0,d*Math.sin(th));
+    obj.div.textContent=`${p.name} (${p.a}AU)`;
+    obj.lbl.visible=showLabels;
+  });
+  // Sun size
+  if(useRealSizes){
+    sunMesh.scale.setScalar(0.5);
+  } else {
+    sunMesh.scale.setScalar(1);
+  }
+}
+rebuild();
+
+// ── Right panel planet list ────────────────────────────────────────────────────
+function buildPlanetList(){
+  const el=document.getElementById('planet-list');
+  el.innerHTML=PLANETS.map((p,i)=>`
+    <div class="planet-card" onclick="focusPlanet(${i+1})">
+      <div class="planet-card-row">
+        <span class="planet-card-name">${p.name}</span>
+        <span class="planet-card-dist">${p.a} AU</span>
+      </div>
+      <div class="planet-card-size">半径 ${p.r_km.toLocaleString()} km · 周期 ${p.period} 年</div>
+    </div>`).join('');
+}
+buildPlanetList();
+
+// ── Scale switch ───────────────────────────────────────────────────────────────
+function setScale(mode){
+  scaleMode=mode;
+  document.getElementById('btn-log').classList.toggle('active',mode==='log');
+  document.getElementById('btn-lin').classList.toggle('active',mode==='linear');
+  rebuild();
+}
+window.setScale=setScale;
+
+function focusPlanet(idx){
+  if(idx===0){
+    camera.position.set(0,15,20); controls.target.set(0,0,0);
+  } else {
+    const p=PLANETS[idx-1];
+    const d=distanceToScene(p.a);
+    camera.position.set(d,d*0.5,d+2); controls.target.set(d,0,0);
+  }
+}
+window.focusPlanet=focusPlanet;
+
+// ── Toggles ────────────────────────────────────────────────────────────────────
+document.getElementById('sz-real').addEventListener('change',e=>{ useRealSizes=e.target.checked; rebuild(); });
+document.getElementById('sz-orbits').addEventListener('change',e=>{ showOrbits=e.target.checked; rebuild(); });
+document.getElementById('sz-labels').addEventListener('change',e=>{ showLabels=e.target.checked; rebuild(); });
+document.getElementById('sz-animate').addEventListener('change',e=>{ doAnimate=e.target.checked; });
+
+// ── Resize & animate ───────────────────────────────────────────────────────────
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  renderer.setSize(w,h,false); labelRenderer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+let last=0;
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=(t-last)/1000; last=t;
+  if(doAnimate){
+    planetObjects.forEach((obj,i)=>{
+      const p=PLANETS[i];
+      // Speed: inner planets faster, outer slower; display speed scaled
+      obj.theta += dt*(0.5/p.period);
+      const d=distanceToScene(p.a);
+      obj.mesh.position.set(d*Math.cos(obj.theta),0,d*Math.sin(obj.theta));
+    });
+  }
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

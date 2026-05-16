@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>太阳视运动 · 天球路径 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .slider-row{margin-bottom:14px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-label{font-size:12px;color:var(--text-secondary);}
+  .slider-value{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);font-weight:500;}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:2px;background:var(--line-strong);outline:none;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent-warm);border-radius:50%;cursor:pointer;border:2px solid var(--bg-deep);box-shadow:0 0 0 1px var(--accent-warm);}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .btn{padding:9px 10px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:12px;cursor:pointer;border-radius:2px;transition:all .15s ease;}
+  .btn:hover{border-color:var(--accent-warm);color:var(--text-primary);}
+  .btn.primary{background:var(--accent-warm);color:#1a1208;border-color:var(--accent-warm);font-weight:500;}
+  .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;}
+  .check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer;user-select:none;}
+  .check input{appearance:none;width:14px;height:14px;border:1px solid var(--line-strong);border-radius:2px;cursor:pointer;position:relative;flex-shrink:0;}
+  .check input:checked{background:var(--accent-warm);border-color:var(--accent-warm);}
+  .check input:checked::after{content:'';position:absolute;left:3px;top:0;width:4px;height:8px;border:solid var(--bg-deep);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#0a1220 0%,#050811 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay-body strong{color:var(--text-primary);font-weight:500;}
+  .top-badge{position:absolute;top:24px;right:24px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:.2em;text-transform:uppercase;z-index:5;}
+  .instruction{position:absolute;bottom:20px;right:24px;font-size:10px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.12em;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:28px 22px;}
+  .panel-right::-webkit-scrollbar{width:4px;}
+  .data-title{font-family:var(--font-display);font-size:18px;font-weight:500;margin-bottom:18px;letter-spacing:-.01em;}
+  .data-block{padding:14px 0;border-top:1px solid var(--line);}
+  .data-block:first-of-type{border-top:none;padding-top:0;}
+  .data-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;font-size:12px;}
+  .data-label{color:var(--text-dim);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;}
+  .data-value{color:var(--text-primary);font-family:var(--font-mono);font-weight:500;font-size:13px;}
+  .data-value.accent{color:var(--accent-warm);}.data-value.hot{color:var(--accent-hot);}.data-value.cool{color:var(--accent-cool);}
+  .arc-legend{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+  .arc-item{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-secondary);}
+  .arc-swatch{width:24px;height:2px;border-radius:1px;}
+  @media(max-width:1200px){#app{grid-template-columns:300px 1fr 240px;}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-sub">Geographic Time · Module 05</div>
+      <h1 class="brand-title">太阳<em>视运动</em></h1>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;line-height:1.6;">天球穹顶 · 日出日落方位 · 正午高度 · 极昼轨迹</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-select">
+        <option value="path">太阳视运动路径</option>
+        <option value="azimuth">日出日落方位角</option>
+        <option value="polar">极昼极夜的天球轨迹</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">观测纬度 φ（认知冲突）</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="lat-name">北京 39.9°N</span>
+          <span class="slider-value" id="lat-val">+39.9°</span>
+        </div>
+        <input type="range" id="lat" min="-90" max="90" value="39.9" step="0.5" />
+      </div>
+      <div class="btn-row">
+        <button class="btn" data-lat="90">北极 极昼</button>
+        <button class="btn" data-lat="66.6">北极圈</button>
+        <button class="btn" data-lat="39.9">北京</button>
+        <button class="btn" data-lat="23.4">北回归线</button>
+        <button class="btn" data-lat="0">赤道</button>
+        <button class="btn" data-lat="-30">南纬30°</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">当前日期（δ）</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="doy-name">春分</span>
+          <span class="slider-value" id="decl-val">δ = +0.0°</span>
+        </div>
+        <input type="range" id="doy" min="0" max="365" value="80" />
+      </div>
+      <div class="btn-row">
+        <button class="btn" data-doy="80">春分</button>
+        <button class="btn" data-doy="172">夏至</button>
+        <button class="btn" data-doy="266">秋分</button>
+        <button class="btn" data-doy="355">冬至</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">时间（时角 H_angle）</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="time-name">正午 12:00</span>
+          <span class="slider-value" id="time-val">H = 0°</span>
+        </div>
+        <input type="range" id="hour" min="0" max="24" value="12" step="0.1" />
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">参考弧线</div>
+      <div class="check-grid">
+        <label class="check"><input type="checkbox" id="arc-equinox" checked><span style="color:#6db3d9">二分日</span></label>
+        <label class="check"><input type="checkbox" id="arc-summer" checked><span style="color:#f4a853">夏至</span></label>
+        <label class="check"><input type="checkbox" id="arc-winter" checked><span style="color:#8a95a8">冬至</span></label>
+        <label class="check"><input type="checkbox" id="arc-today" checked><span style="color:#7dc48a">今日</span></label>
+        <label class="check"><input type="checkbox" id="show-horizon" checked>地平线</label>
+        <label class="check"><input type="checkbox" id="show-meridian" checked>子午圈</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="btn-row">
+        <button class="btn primary" id="btn-reset">重置视角</button>
+        <button class="btn" id="btn-top">天顶俯视</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay">
+      <div class="kp-overlay-header">
+        <div class="kp-overlay-title">知识点解读</div>
+        <button class="kp-overlay-close" id="kp-close">—</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body"></div>
+    </div>
+    <div class="top-badge">geo · solar path · celestial dome</div>
+    <div class="instruction">左键拖拽 · 滚轮缩放</div>
+  </main>
+
+  <aside class="panel-right">
+    <h2 class="data-title">太阳数据</h2>
+    <div class="data-block">
+      <div class="data-row"><span class="data-label">当前高度角 h</span><span class="data-value accent" id="d-alt">—</span></div>
+      <div class="data-row"><span class="data-label">当前方位角 A</span><span class="data-value" id="d-az">—</span></div>
+      <div class="data-row"><span class="data-label">正午高度 H_noon</span><span class="data-value hot" id="d-noon">—</span></div>
+      <div class="data-row"><span class="data-label">时角 H_angle</span><span class="data-value cool" id="d-ha">—</span></div>
+    </div>
+
+    <div class="data-block">
+      <div class="data-label" style="margin-bottom:10px;">今日（δ = <span id="d-decl-span">0.0°</span>）</div>
+      <div class="data-row"><span class="data-label">日出方位角</span><span class="data-value" id="d-rise-az">—</span></div>
+      <div class="data-row"><span class="data-label">日落方位角</span><span class="data-value" id="d-set-az">—</span></div>
+      <div class="data-row"><span class="data-label">昼长</span><span class="data-value" id="d-daylen">—</span></div>
+      <div class="data-row"><span class="data-label">极昼/极夜</span><span class="data-value" id="d-polar">—</span></div>
+    </div>
+
+    <div class="data-block">
+      <div class="arc-legend">
+        <div class="arc-item"><span class="arc-swatch" style="background:#6db3d9"></span>二分日弧（δ=0°）</div>
+        <div class="arc-item"><span class="arc-swatch" style="background:#f4a853"></span>夏至弧（δ=+23.4°）</div>
+        <div class="arc-item"><span class="arc-swatch" style="background:#8a95a8"></span>冬至弧（δ=−23.4°）</div>
+        <div class="arc-item"><span class="arc-swatch" style="background:#7dc48a"></span>今日弧（当前δ）</div>
+        <div class="arc-item"><span class="arc-swatch" style="background:#f4a853;opacity:.8"></span>当前太阳位置</div>
+      </div>
+    </div>
+
+    <div class="data-block">
+      <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+        <strong style="color:var(--text-primary)">认知冲突</strong><br>
+        把纬度拖到 <span style="color:var(--accent-warm)">90°N</span>，选夏至：<br>
+        太阳不落入地平线以下——在地平线以上绕一整圈（极昼轨迹）<br><br>
+        赤道春分：太阳正东升、正西落，正午直射头顶
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+const DOME_R = 4.0;
+
+const KP_DOCS = {
+  'path': `<strong>太阳视运动</strong>：以观测者为中心，太阳在天球上的运动轨迹。地球自转（自西向东）导致太阳表观上自东向西移动；地球公转（黄赤交角）导致太阳路径随季节变化。<br><br>在天球穹顶视图中：太阳每天沿一条弧线从东方地平线升起，经过正午最高点（子午线），至西方落下。弧线的高低（正午高度 H）和起落方位取决于观测纬度 φ 和直射纬度 δ。`,
+  'azimuth': `<strong>日出日落方位角</strong>：方位角从正北顺时针量（N=0°, E=90°, S=180°, W=270°）。<br><br>计算：cos(A_rise) = (sin(δ) - sin(φ)·sin(h)) / (cos(φ)·cos(h))，日出时 h=0。<br><br>规律：<br>• δ > 0（直射北半球）：北半球东北升、西北落<br>• δ = 0（二分日）：正东升、正西落（全球适用）<br>• δ < 0（直射南半球）：北半球东南升、西南落<br><br>南半球方位角与北半球镜像对称。`,
+  'polar': `<strong>极昼极夜的天球轨迹</strong>（认知冲突核心）：<br><br>纬度 66.6°N（北极圈），夏至：太阳轨迹正好与地平线相切——24h 最低点恰好在地平线上，这是极昼的边界。<br><br>纬度 90°N（北极点），夏至：太阳以<strong>水平圆</strong>轨迹绕天空一圈，始终保持 23.4° 高度——既不升也不落！这是最纯粹的极昼图景，与直觉完全不同。<br><br>冬至时相反：北极圈以内的太阳轨迹整体落入地平线以下，无日出日落（极夜）。`,
+};
+
+// ── THREE SETUP ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('three-canvas');
+const wrap = canvas.parentElement;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, wrap.clientWidth/wrap.clientHeight, 0.1, 100);
+camera.position.set(5, 3, 5);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+renderer.setClearColor(0x050811, 1);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+labelRenderer.domElement.style.cssText = 'position:absolute;top:0;pointer-events:none;';
+wrap.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 1; controls.maxDistance = 20;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(wrap.clientWidth,wrap.clientHeight), 0.4, 0.5, 0.85);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+// ── CELESTIAL DOME ───────────────────────────────────────────────────────────
+// Observer at origin. Dome is a hemisphere (upper half-sphere), inside face.
+// Convention: N = -Z, E = +X, S = +Z, W = -X, zenith = +Y.
+const domeMat = new THREE.MeshBasicMaterial({
+  color: 0x0a1825, side: THREE.BackSide, transparent: true, opacity: 0.35
+});
+const domeMesh = new THREE.Mesh(new THREE.SphereGeometry(DOME_R, 64, 32, 0, Math.PI*2, 0, Math.PI/2), domeMat);
+scene.add(domeMesh);
+
+// Ground disc
+const groundDisc = new THREE.Mesh(
+  new THREE.CircleGeometry(DOME_R, 64),
+  new THREE.MeshBasicMaterial({ color: 0x0d1620, side: THREE.DoubleSide })
+);
+groundDisc.rotation.x = -Math.PI / 2;
+scene.add(groundDisc);
+
+// Horizon circle
+const horzPts2=[];for(let i=0;i<=128;i++){const t=(i/128)*Math.PI*2;horzPts2.push(new THREE.Vector3(DOME_R*Math.cos(t),0,DOME_R*Math.sin(t)));}
+const horizonLine2 = new THREE.Line(new THREE.BufferGeometry().setFromPoints(horzPts2), new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.3}));
+const horizonGroup = new THREE.Group(); horizonGroup.add(horizonLine2); scene.add(horizonGroup);
+
+// Meridian circle (N-S vertical circle)
+const meridPts=[];for(let i=0;i<=64;i++){const t=(i/64)*Math.PI;meridPts.push(new THREE.Vector3(0,DOME_R*Math.sin(t),-DOME_R*Math.cos(t)));}
+const meridianLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(meridPts), new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.15}));
+const meridianGroup = new THREE.Group(); meridianGroup.add(meridianLine); scene.add(meridianGroup);
+
+// Altitude circles (every 30°)
+for (let alt = 30; alt < 90; alt += 30) {
+  const pts=[], r=DOME_R*Math.cos(alt*DEG), y=DOME_R*Math.sin(alt*DEG);
+  for (let i=0;i<=64;i++){const t=(i/64)*Math.PI*2;pts.push(new THREE.Vector3(r*Math.cos(t),y,r*Math.sin(t)));}
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.06})));
+}
+
+// Azimuth lines (every 45°)
+for (let az = 0; az < 360; az += 45) {
+  const azR = az * DEG;
+  const pts2=[new THREE.Vector3(DOME_R*Math.sin(azR),0,-DOME_R*Math.cos(azR))];
+  pts2.push(new THREE.Vector3(0,DOME_R,0));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts2), new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.06})));
+}
+
+// Cardinal labels
+function makeL(text,color,pos){const el=document.createElement('div');el.textContent=text;el.style.cssText=`color:${color};font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-shadow:0 0 8px rgba(0,0,0,.9);pointer-events:none;`;const o=new CSS2DObject(el);o.position.copy(pos);scene.add(o);}
+makeL('N 北','#7dc48a',new THREE.Vector3(0,0.15,-DOME_R*0.95));
+makeL('S 南','#e85d4a',new THREE.Vector3(0,0.15,DOME_R*0.95));
+makeL('E 东','#f4a853',new THREE.Vector3(DOME_R*0.95,0.15,0));
+makeL('W 西','#6db3d9',new THREE.Vector3(-DOME_R*0.95,0.15,0));
+makeL('天顶 Z','#ffffff',new THREE.Vector3(0,DOME_R*0.9,0));
+
+// ── SUN PATH COMPUTATION ─────────────────────────────────────────────────────
+// Spherical astronomy: altitude h and azimuth A of sun given:
+//   φ = observer latitude, δ = declination, H_angle = hour angle
+// sin(h) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(H_angle)
+// cos(A) = (sin(δ) - sin(φ)sin(h)) / (cos(φ)cos(h))
+// A measured from South in traditional astronomy; convert to North-based:
+//   A_north = 180° + A_trad (for AM), 180° - A_trad (for PM) — easier via atan2
+
+function sunPos(phiDeg, declDeg, H_angleDeg) {
+  const phi = phiDeg * DEG, decl = declDeg * DEG, Ha = H_angleDeg * DEG;
+  const sinh = Math.sin(phi)*Math.sin(decl) + Math.cos(phi)*Math.cos(decl)*Math.cos(Ha);
+  const h = Math.asin(Math.max(-1, Math.min(1, sinh)));
+  // Azimuth (from North, clockwise): atan2
+  const cosA = (Math.sin(decl) - Math.sin(phi)*Math.sin(h)) / (Math.cos(phi)*Math.cos(h) || 1e-9);
+  const A_from_south = Math.acos(Math.max(-1, Math.min(1, cosA)));
+  const A_north = (H_angleDeg > 0) ? Math.PI + A_from_south : Math.PI - A_from_south; // PM or AM
+  return { h: h * RAD, A: A_north * RAD }; // degrees
+}
+
+// Map (altitude, azimuth) to 3D dome point
+// In our scene: N=-Z, E=+X, S=+Z, W=-X, zenith=+Y, horizon=DOME_R
+function toDomePos(altDeg, azDeg) {
+  const alt = altDeg * DEG, az = azDeg * DEG;
+  const r = DOME_R * Math.cos(alt);
+  return new THREE.Vector3(
+    r * Math.sin(az),   // E when az=90°
+    DOME_R * Math.sin(alt),
+    -r * Math.cos(az)   // N when az=0°
+  );
+}
+
+// Build sun path arc for a given (phi, decl)
+function buildArcPoints(phiDeg, declDeg) {
+  const pts = [];
+  // Check if polar day: at H_angle=180 (midnight), sin(h) = sin(phi)sin(decl) + cos(phi)cos(decl)*(-1)
+  //   = sin(phi-decl)... if h_midnight > 0 → polar day
+  const phi = phiDeg * DEG, decl = declDeg * DEG;
+  const h_midnight = Math.asin(Math.sin(phi)*Math.sin(decl) - Math.cos(phi)*Math.cos(decl)) * RAD;
+  const h_noon = Math.asin(Math.sin(phi)*Math.sin(decl) + Math.cos(phi)*Math.cos(decl)) * RAD;
+  const isPolarDay = h_midnight > 0;
+  const isPolarNight = h_noon < 0;
+
+  for (let ha = -180; ha <= 180; ha += 2) {
+    const { h, A } = sunPos(phiDeg, declDeg, ha);
+    if (!isPolarDay && !isPolarNight && h < -1) continue; // skip underground
+    const pt = toDomePos(h, A);
+    pts.push(pt);
+  }
+  return pts;
+}
+
+function makeSunArc(phiDeg, declDeg, color, opacity=0.7) {
+  const pts = buildArcPoints(phiDeg, declDeg);
+  if (pts.length < 2) return new THREE.Group();
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  return new THREE.Line(geo, new THREE.LineBasicMaterial({color, transparent:true, opacity}));
+}
+
+// Arc containers
+const arcEquinox = new THREE.Group(); scene.add(arcEquinox);
+const arcSummer  = new THREE.Group(); scene.add(arcSummer);
+const arcWinter  = new THREE.Group(); scene.add(arcWinter);
+const arcToday   = new THREE.Group(); scene.add(arcToday);
+
+// Sun sphere
+const sunSphere = new THREE.Mesh(new THREE.SphereGeometry(0.1,16,16), new THREE.MeshBasicMaterial({color:0xffe9c7}));
+scene.add(sunSphere);
+const sunGlowS = new THREE.Mesh(new THREE.SphereGeometry(0.18,16,16), new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,side:THREE.BackSide,
+  vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`varying vec3 vN;void main(){float r=pow(1.-abs(vN.z),2.5);gl_FragColor=vec4(1.,.85,.55,r*.7);}`,
+}));
+sunSphere.add(sunGlowS);
+
+// Rise/set markers
+const riseMarker = new THREE.Mesh(new THREE.SphereGeometry(0.07,12,12), new THREE.MeshBasicMaterial({color:0xf4a853}));
+const setMarker  = new THREE.Mesh(new THREE.SphereGeometry(0.07,12,12), new THREE.MeshBasicMaterial({color:0x6db3d9}));
+scene.add(riseMarker); scene.add(setMarker);
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+const state = { lat: 39.9, doy: 80, hour: 12.0 };
+function computeDecl(doy){ return 23.44*Math.sin(2*Math.PI*(doy+284)/365.25); }
+function doyLabel(doy){const s=[{doy:80,n:'春分'},{doy:172,n:'夏至'},{doy:266,n:'秋分'},{doy:355,n:'冬至'}];for(const x of s){if(Math.abs(doy-x.doy)<4)return x.n;}return'doy '+Math.round(doy);}
+function dayLengthHrs(phi, decl){const c=-Math.tan(phi*DEG)*Math.tan(decl*DEG);if(c<=-1)return 24;if(c>=1)return 0;return(2*Math.acos(c)*RAD)/15;}
+function riseAzimuth(phi, decl){const cA=(Math.sin(decl*DEG))/(Math.cos(phi*DEG)||1e-9);const A=Math.acos(Math.max(-1,Math.min(1,cA)))*RAD;return 90-A;}  // from North
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────
+const kpSelect=document.getElementById('kp-select');
+const kpBody=document.getElementById('kp-body');
+const kpOverlay=document.getElementById('kp-overlay');
+function updateKP(){kpBody.innerHTML=KP_DOCS[kpSelect.value];}
+kpSelect.addEventListener('change',updateKP);updateKP();
+document.getElementById('kp-close').addEventListener('click',()=>{kpOverlay.style.display=kpOverlay.style.display==='none'?'':'none';});
+
+const latInput=document.getElementById('lat');
+latInput.addEventListener('input',()=>{state.lat=+latInput.value;});
+document.querySelectorAll('[data-lat]').forEach(b=>b.addEventListener('click',()=>{state.lat=+b.dataset.lat;latInput.value=state.lat;}));
+
+const doyInput=document.getElementById('doy');
+doyInput.addEventListener('input',()=>{state.doy=+doyInput.value;});
+document.querySelectorAll('[data-doy]').forEach(b=>b.addEventListener('click',()=>{state.doy=+b.dataset.doy;doyInput.value=state.doy;}));
+
+const hourInput=document.getElementById('hour');
+hourInput.addEventListener('input',()=>{state.hour=+hourInput.value;});
+
+document.getElementById('btn-reset').addEventListener('click',()=>{camera.position.set(5,3,5);controls.target.set(0,0,0);controls.update();});
+document.getElementById('btn-top').addEventListener('click',()=>{camera.position.set(0,7,0.01);controls.target.set(0,0,0);controls.update();});
+
+document.getElementById('arc-equinox').addEventListener('change',e=>{arcEquinox.visible=e.target.checked;});
+document.getElementById('arc-summer').addEventListener('change',e=>{arcSummer.visible=e.target.checked;});
+document.getElementById('arc-winter').addEventListener('change',e=>{arcWinter.visible=e.target.checked;});
+document.getElementById('arc-today').addEventListener('change',e=>{arcToday.visible=e.target.checked;});
+document.getElementById('show-horizon').addEventListener('change',e=>{horizonGroup.visible=e.target.checked;});
+document.getElementById('show-meridian').addEventListener('change',e=>{meridianGroup.visible=e.target.checked;});
+
+let lastLat=null, lastDoy=null;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const { lat, doy, hour } = state;
+  const decl = computeDecl(doy);
+
+  // Rebuild arcs when lat or doy changes
+  if (lat !== lastLat || doy !== lastDoy) {
+    arcEquinox.clear(); arcEquinox.add(makeSunArc(lat, 0, 0x6db3d9, 0.65));
+    arcSummer.clear();  arcSummer.add(makeSunArc(lat, 23.4, 0xf4a853, 0.65));
+    arcWinter.clear();  arcWinter.add(makeSunArc(lat, -23.4, 0x8a95a8, 0.5));
+    arcToday.clear();   arcToday.add(makeSunArc(lat, decl, 0x7dc48a, 0.8));
+    lastLat = lat; lastDoy = doy;
+  }
+
+  // Current sun position (hour angle = (hour - 12) * 15°)
+  const ha = (hour - 12) * 15;
+  const { h: alt, A: az } = sunPos(lat, decl, ha);
+  const sunPosWorld = toDomePos(alt, az);
+  sunSphere.position.copy(sunPosWorld);
+  sunSphere.visible = alt > -8; // hide if well below horizon
+
+  // Rise/set
+  const dl = dayLengthHrs(lat, decl);
+  let risePos = null, setPos = null;
+  if (dl > 0 && dl < 24) {
+    const haRise = -(dl / 2) * 15; // negative hour angle at sunrise
+    const haSet  = (dl / 2) * 15;
+    const riseData = sunPos(lat, decl, haRise);
+    const setData  = sunPos(lat, decl, haSet);
+    risePos = toDomePos(0, riseData.A);
+    setPos  = toDomePos(0, setData.A);
+    riseMarker.position.copy(risePos); riseMarker.visible = true;
+    setMarker.position.copy(setPos);   setMarker.visible = true;
+  } else {
+    riseMarker.visible = false; setMarker.visible = false;
+  }
+
+  // Right panel
+  document.getElementById('d-alt').textContent = alt.toFixed(1) + '°';
+  document.getElementById('d-az').textContent = az.toFixed(1) + '° (N顺)';
+  const noonH = Math.max(0, 90 - Math.abs(lat - decl));
+  document.getElementById('d-noon').textContent = noonH.toFixed(1) + '°';
+  document.getElementById('d-ha').textContent = ha.toFixed(1) + '°';
+  document.getElementById('d-decl-span').textContent = (decl>=0?'+':'')+decl.toFixed(1)+'°';
+
+  if (dl === 24) {
+    document.getElementById('d-rise-az').textContent = '—（极昼）';
+    document.getElementById('d-set-az').textContent  = '—（极昼）';
+    document.getElementById('d-daylen').textContent = '24 h（极昼）';
+    document.getElementById('d-polar').textContent = '极昼 ☀️';
+  } else if (dl === 0) {
+    document.getElementById('d-rise-az').textContent = '—（极夜）';
+    document.getElementById('d-set-az').textContent  = '—（极夜）';
+    document.getElementById('d-daylen').textContent = '0 h（极夜）';
+    document.getElementById('d-polar').textContent = '极夜 🌑';
+  } else {
+    const haRise = -(dl/2)*15, haSet = (dl/2)*15;
+    const rD = sunPos(lat, decl, haRise), sD = sunPos(lat, decl, haSet);
+    document.getElementById('d-rise-az').textContent = rD.A.toFixed(1) + '°';
+    document.getElementById('d-set-az').textContent  = sD.A.toFixed(1) + '°';
+    const dlH = Math.floor(dl), dlM = Math.round((dl-dlH)*60);
+    document.getElementById('d-daylen').textContent = dlH + 'h ' + String(dlM).padStart(2,'0') + 'min';
+    document.getElementById('d-polar').textContent = '—';
+  }
+
+  // Left panel
+  document.getElementById('lat-val').textContent = (lat>=0?'+':'')+lat.toFixed(1)+'°';
+  document.getElementById('lat-name').textContent = Math.abs(lat).toFixed(1)+(lat>=0?'°N':'°S');
+  document.getElementById('doy-name').textContent = doyLabel(doy);
+  document.getElementById('decl-val').textContent = 'δ = '+(decl>=0?'+':'')+decl.toFixed(1)+'°';
+  document.getElementById('time-name').textContent = String(Math.floor(hour)).padStart(2,'0')+':'+String(Math.round((hour%1)*60)).padStart(2,'0');
+  document.getElementById('time-val').textContent = 'H = '+ha.toFixed(0)+'°';
+
+  controls.update();
+  composer.render();
+  labelRenderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  const w=wrap.clientWidth,h=wrap.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);composer.setSize(w,h);bloomPass.resolution.set(w,h);labelRenderer.setSize(w,h);
+});
+</script>
+</body>
+</html>

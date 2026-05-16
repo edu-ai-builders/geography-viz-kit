@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>地球公转 · 黄赤交角 · 二分二至 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #070a13;
+    --bg-panel: rgba(12, 17, 28, 0.82);
+    --bg-panel-solid: #0c111c;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.18);
+    --text-primary: #e8ecf3;
+    --text-secondary: #8a95a8;
+    --text-dim: #5a6577;
+    --accent-warm: #f4a853;
+    --accent-hot: #e85d4a;
+    --accent-cool: #6db3d9;
+    --accent-green: #7dc48a;
+    --font-display: 'Fraunces', 'Noto Serif SC', serif;
+    --font-sans: 'Noto Sans SC', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    overflow: hidden;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+  #app { display: grid; grid-template-columns: 340px 1fr 280px; height: 100vh; position: relative; z-index: 1; }
+
+  /* ── LEFT PANEL ── */
+  .panel-left {
+    background: var(--bg-panel);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    padding: 28px 24px;
+  }
+  .panel-left::-webkit-scrollbar { width: 4px; }
+  .panel-left::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 2px; }
+  .brand-block { margin-bottom: 32px; }
+  .brand-title { font-family: var(--font-display); font-size: 26px; font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .brand-title em { font-style: italic; color: var(--accent-warm); font-weight: 400; }
+  .brand-sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.18em; font-family: var(--font-mono); }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-decoration: none; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px; }
+  .back-link:hover { color: var(--accent-warm); }
+  .section { margin-bottom: 28px; }
+  .section-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.22em; font-family: var(--font-mono); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .section-label::before { content: ''; width: 6px; height: 1px; background: var(--accent-warm); }
+  .kp-select { width: 100%; padding: 11px 14px; background: transparent; border: 1px solid var(--line-strong); color: var(--text-primary); font-family: var(--font-sans); font-size: 13px; border-radius: 2px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px; }
+  .kp-select:hover { border-color: var(--accent-warm); }
+  .kp-select option { background: var(--bg-panel-solid); }
+  .slider-row { margin-bottom: 14px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .slider-label { font-size: 12px; color: var(--text-secondary); }
+  .slider-value { font-family: var(--font-mono); font-size: 12px; color: var(--accent-warm); font-weight: 500; }
+  input[type="range"] { -webkit-appearance: none; width: 100%; height: 2px; background: var(--line-strong); outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent-warm); border-radius: 50%; cursor: pointer; border: 2px solid var(--bg-deep); box-shadow: 0 0 0 1px var(--accent-warm); }
+  input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; background: var(--accent-warm); border-radius: 50%; cursor: pointer; border: 2px solid var(--bg-deep); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .btn { padding: 9px 10px; background: transparent; border: 1px solid var(--line-strong); color: var(--text-secondary); font-family: var(--font-sans); font-size: 12px; cursor: pointer; border-radius: 2px; transition: all 0.15s ease; letter-spacing: 0.02em; }
+  .btn:hover { border-color: var(--accent-warm); color: var(--text-primary); }
+  .btn.primary { background: var(--accent-warm); color: #1a1208; border-color: var(--accent-warm); font-weight: 500; }
+  .btn.primary:hover { background: #f7b868; }
+  .btn-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px; }
+  .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 14px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+  .check input { appearance: none; width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 2px; cursor: pointer; position: relative; flex-shrink: 0; }
+  .check input:checked { background: var(--accent-warm); border-color: var(--accent-warm); }
+  .check input:checked::after { content: ''; position: absolute; left: 3px; top: 0px; width: 4px; height: 8px; border: solid var(--bg-deep); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+  .check:hover { color: var(--text-primary); }
+
+  /* ── CENTER CANVAS ── */
+  .canvas-wrap { position: relative; background: radial-gradient(ellipse at center, #0a1220 0%, #050811 100%); }
+  #three-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  #three-canvas:active { cursor: grabbing; }
+  .kp-overlay { position: absolute; top: 24px; left: 24px; right: 24px; max-width: 720px; background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--line); border-left: 2px solid var(--accent-warm); padding: 16px 20px; border-radius: 2px; z-index: 10; }
+  .kp-overlay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .kp-overlay-title { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.22em; color: var(--accent-warm); }
+  .kp-overlay-close { cursor: pointer; color: var(--text-dim); font-size: 16px; line-height: 1; background: none; border: none; }
+  .kp-overlay-body { font-size: 13px; line-height: 1.75; color: var(--text-secondary); }
+  .kp-overlay-body strong { color: var(--text-primary); font-weight: 500; }
+  .scene-legend { position: absolute; bottom: 20px; left: 24px; display: flex; gap: 18px; font-size: 11px; font-family: var(--font-mono); color: var(--text-dim); }
+  .scene-legend .lg-item { display: flex; align-items: center; gap: 6px; }
+  .scene-legend .lg-swatch { width: 14px; height: 2px; }
+  .top-badge { position: absolute; top: 24px; right: 24px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; z-index: 5; }
+  .instruction { position: absolute; bottom: 20px; right: 24px; font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.12em; }
+
+  /* ── RIGHT PANEL ── */
+  .panel-right { background: var(--bg-panel); backdrop-filter: blur(20px); border-left: 1px solid var(--line); overflow-y: auto; padding: 28px 22px; }
+  .panel-right::-webkit-scrollbar { width: 4px; }
+  .panel-right::-webkit-scrollbar-thumb { background: var(--line-strong); }
+  .data-title { font-family: var(--font-display); font-size: 18px; font-weight: 500; margin-bottom: 18px; letter-spacing: -0.01em; }
+  .data-block { padding: 14px 0; border-top: 1px solid var(--line); }
+  .data-block:first-of-type { border-top: none; padding-top: 0; }
+  .data-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; font-size: 12px; }
+  .data-label { color: var(--text-dim); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .data-value { color: var(--text-primary); font-family: var(--font-mono); font-weight: 500; font-size: 13px; }
+  .data-value.accent { color: var(--accent-warm); }
+  .data-value.hot { color: var(--accent-hot); }
+  .data-value.cool { color: var(--accent-cool); }
+
+  /* Declination curve canvas */
+  .decl-canvas-wrap { margin-top: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--line); border-radius: 2px; padding: 10px; }
+  .decl-canvas-label { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; }
+  #decl-canvas { display: block; width: 100%; }
+
+  /* Season badges */
+  .season-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .season-card { padding: 10px 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 2px; }
+  .season-name { font-size: 11px; font-weight: 500; margin-bottom: 4px; }
+  .season-data { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); line-height: 1.6; }
+
+  @media (max-width: 1200px) { #app { grid-template-columns: 300px 1fr 240px; } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── LEFT PANEL ── -->
+  <aside class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-sub">Geographic Time · Module 02</div>
+      <h1 class="brand-title">Earth <em>Revolution</em></h1>
+      <div style="font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.6;">地球公转 · 黄赤交角 · 二分二至 · 四季成因</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-select">
+        <option value="revolution">地球公转基础</option>
+        <option value="axial-tilt">黄赤交角与四季</option>
+        <option value="solstices">二分二至特征</option>
+        <option value="declination">太阳直射点回归</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">公转日期</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label" id="doy-label">春分 3/21</span>
+          <span class="slider-value" id="doy-value">doy 80</span>
+        </div>
+        <input type="range" id="doy" min="0" max="365" value="80" />
+      </div>
+      <div class="btn-row-4">
+        <button class="btn" data-doy="80">春分</button>
+        <button class="btn" data-doy="172">夏至</button>
+        <button class="btn" data-doy="266">秋分</button>
+        <button class="btn" data-doy="355">冬至</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">黄赤交角（认知冲突）</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">轴倾斜角度</span>
+          <span class="slider-value" id="tilt-value">23.4°</span>
+        </div>
+        <input type="range" id="tilt" min="0" max="45" value="23.4" step="0.1" />
+      </div>
+      <div style="font-size: 11px; color: var(--text-dim); line-height: 1.6;">
+        拖到 <strong style="color:var(--accent-warm)">0°</strong>：四季消失，直射点固定在赤道<br>
+        拖到 <strong style="color:var(--accent-hot)">45°</strong>：极端季节差异，热带扩展
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">动画控制</div>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-pause">暂停</button>
+        <button class="btn" id="btn-reset-view">重置视角</button>
+      </div>
+      <div class="slider-row" style="margin-top: 12px;">
+        <div class="slider-header">
+          <span class="slider-label">公转速率</span>
+          <span class="slider-value" id="speed-value">20×</span>
+        </div>
+        <input type="range" id="speed" min="0" max="200" value="20" />
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">视角预设</div>
+      <div class="btn-row">
+        <button class="btn" data-view="top">俯视轨道</button>
+        <button class="btn" data-view="side">侧视</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">可视化图层</div>
+      <div class="check-grid">
+        <label class="check"><input type="checkbox" id="layer-orbit" checked>公转轨道</label>
+        <label class="check"><input type="checkbox" id="layer-axis" checked>地轴</label>
+        <label class="check"><input type="checkbox" id="layer-terminator" checked>晨昏圈</label>
+        <label class="check"><input type="checkbox" id="layer-tropics" checked>回归线</label>
+        <label class="check"><input type="checkbox" id="layer-sunray" checked>太阳光线</label>
+        <label class="check"><input type="checkbox" id="layer-nodes" checked>节气标注</label>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── CENTER CANVAS ── -->
+  <main class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay">
+      <div class="kp-overlay-header">
+        <div class="kp-overlay-title">知识点解读</div>
+        <button class="kp-overlay-close" id="kp-close">—</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body"></div>
+    </div>
+    <div class="top-badge">geo · revolution · seasons</div>
+    <div class="scene-legend">
+      <div class="lg-item"><span class="lg-swatch" style="background:#f4a853"></span>地轴 / 直射纬线</div>
+      <div class="lg-item"><span class="lg-swatch" style="background:#e85d4a"></span>赤道</div>
+      <div class="lg-item"><span class="lg-swatch" style="background:#6db3d9"></span>晨昏圈</div>
+      <div class="lg-item"><span class="lg-swatch" style="background:rgba(255,255,255,0.3)"></span>轨道面</div>
+    </div>
+    <div class="instruction">左键拖拽 · 滚轮缩放 · 右键平移</div>
+  </main>
+
+  <!-- ── RIGHT PANEL ── -->
+  <aside class="panel-right">
+    <h2 class="data-title">实时数据</h2>
+    <div class="data-block">
+      <div class="data-row"><span class="data-label">日期</span><span class="data-value" id="d-date">—</span></div>
+      <div class="data-row"><span class="data-label">黄赤交角</span><span class="data-value accent" id="d-tilt">23.4°</span></div>
+      <div class="data-row"><span class="data-label">太阳直射纬度</span><span class="data-value hot" id="d-decl">+0.0°</span></div>
+      <div class="data-row"><span class="data-label">日地距离（近似）</span><span class="data-value cool" id="d-dist">1.000 AU</span></div>
+      <div class="data-row"><span class="data-label">轨道速度（近似）</span><span class="data-value" id="d-vel">29.8 km/s</span></div>
+    </div>
+
+    <div class="data-block">
+      <div class="data-label" style="margin-bottom:10px;">节气对照（北半球）</div>
+      <div class="season-grid">
+        <div class="season-card">
+          <div class="season-name" style="color:var(--accent-warm)">春分 3/21</div>
+          <div class="season-data">δ = 0°<br>晨昏圈过两极<br>全球昼=夜</div>
+        </div>
+        <div class="season-card">
+          <div class="season-name" style="color:var(--accent-hot)">夏至 6/22</div>
+          <div class="season-data">δ = +23.4°<br>北极极昼<br>北半球昼最长</div>
+        </div>
+        <div class="season-card">
+          <div class="season-name" style="color:var(--accent-cool)">秋分 9/23</div>
+          <div class="season-data">δ = 0°<br>晨昏圈过两极<br>全球昼=夜</div>
+        </div>
+        <div class="season-card">
+          <div class="season-name" style="color:#8a95a8">冬至 12/22</div>
+          <div class="season-data">δ = −23.4°<br>南极极昼<br>北半球昼最短</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-block">
+      <div class="decl-canvas-wrap">
+        <div class="decl-canvas-label">太阳直射纬度 δ（全年）</div>
+        <canvas id="decl-canvas" width="220" height="100"></canvas>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ====================== CONSTANTS ======================
+const EARTH_RADIUS = 0.5;
+const ORBIT_A = 5.0;              // semi-major axis (world units)
+const ORBIT_E = 0.0167;           // Earth eccentricity
+const ORBIT_B = ORBIT_A * Math.sqrt(1 - ORBIT_E * ORBIT_E);
+const ORBIT_C = ORBIT_A * ORBIT_E; // focal offset
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+
+const KP_DOCS = {
+  'revolution': `<strong>地球公转</strong>：地球沿椭圆轨道绕太阳运行，太阳位于椭圆的一个<strong>焦点</strong>（而非中心）。地球公转一周约 365.25 天，方向为自西向东（从北极俯视为逆时针）。近日点在每年 <strong>1 月初</strong>（约 1.471 亿 km），远日点在 <strong>7 月初</strong>（约 1.521 亿 km）——这说明北半球的"夏热"与日地距离无关，完全由<strong>黄赤交角</strong>决定。`,
+  'axial-tilt': `<strong>黄赤交角</strong>是地球自转轴与公转轨道面（黄道面）法线之间的夹角，目前约 <strong>23.44°</strong>。正是因为地轴在空间中保持方向不变（指向北极星附近）而地球绕太阳公转，才导致太阳直射点在南北回归线之间来回移动，形成四季。将黄赤交角调到 0°，直射点固定赤道，四季消失。调到 45°，热带扩展，季节差异更极端。`,
+  'solstices': `<strong>二分二至</strong>是地球公转过程中的四个特殊节点。<strong>春分（3/21）和秋分（9/23）</strong>：直射点在赤道，晨昏圈过两极，全球昼夜等长。<strong>夏至（6/22）</strong>：直射北回归线（+23.44°），北极圈以内极昼，北半球昼最长。<strong>冬至（12/22）</strong>：直射南回归线（−23.44°），南极圈以内极昼，北半球昼最短。`,
+  'declination': `<strong>太阳直射点</strong>的年回归运动由公式近似：δ = 23.44°·sin(2π·(doy+284)/365.25)。它在 −23.44°（南回归线）到 +23.44°（北回归线）之间往返，周期为一个回归年（365.2422 天）。右侧曲线图实时显示当前日期在年度直射点轨迹中的位置。这条正弦曲线的振幅等于黄赤交角——拖动黄赤交角滑杆可实时观察曲线振幅的变化。`,
+};
+
+// ====================== THREE SETUP ======================
+const canvas = document.getElementById('three-canvas');
+const wrap = canvas.parentElement;
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(40, wrap.clientWidth / wrap.clientHeight, 0.1, 200);
+camera.position.set(0, 10, 14);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+renderer.setClearColor(0x050811, 1);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+wrap.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 2;
+controls.maxDistance = 60;
+
+// ── Bloom ──────────────────────────────────────────────────────────────────
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(wrap.clientWidth, wrap.clientHeight), 0.4, 0.5, 0.85
+);
+composer.addPass(bloomPass);
+composer.addPass(new OutputPass());
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 0.12));
+const sunLight = new THREE.PointLight(0xffe9c7, 2.5, 30);
+sunLight.position.set(0, 0, 0); // sun at origin (left focus of ellipse, offset by -c)
+scene.add(sunLight);
+
+// ====================== STAR FIELD ======================
+const starGeo = new THREE.BufferGeometry();
+const starN = 2000;
+const starPos = new Float32Array(starN * 3);
+for (let i = 0; i < starN; i++) {
+  const r = 80 + Math.random() * 30;
+  const th = Math.random() * Math.PI * 2;
+  const ph = Math.acos(2 * Math.random() - 1);
+  starPos[i*3]   = r * Math.sin(ph) * Math.cos(th);
+  starPos[i*3+1] = r * Math.cos(ph);
+  starPos[i*3+2] = r * Math.sin(ph) * Math.sin(th);
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.12, transparent: true, opacity: 0.7 })));
+
+// ====================== SUN ======================
+// Sun sits at world origin. Earth's ellipse has the sun at one focus.
+// We place Earth's ellipse so that the left focus (x = -ORBIT_C) is at origin.
+// Earth position on ellipse: x_rel = ORBIT_A*cos(θ) - ORBIT_C, z_rel = ORBIT_B*sin(θ)
+// Then world position: earth.x = x_rel, earth.z = z_rel (no shift needed because we define ellipse
+// relative to left focus at origin).
+// Actually: standard ellipse center at (0,0), foci at (±c, 0).
+// We want left focus at world origin → shift center to (c, 0).
+// So: earth_world_x = ORBIT_A*cos(θ) + (-ORBIT_C) + ORBIT_C = ORBIT_A*cos(θ)... no.
+// Let center of ellipse be at (ORBIT_C, 0, 0) in world. Sun at origin (left focus).
+// Earth world pos: x = ORBIT_C + ORBIT_A*cos(θ), z = ORBIT_B*sin(θ).
+// At θ=π: x = ORBIT_C - ORBIT_A = -(ORBIT_A - ORBIT_C) = -perihelion distance (perihelion is at left, near sun).
+// Wait: perihelion = a(1-e) = a - ae = a - c. Sun is at left focus.
+// At θ=0: x = c + a = a+c = a(1+e) = aphelion distance. Earth is far from sun.
+// At θ=π: x = c - a = -(a-c) = -(a(1-e)) = -perihelion. But x is negative, earth is at (-perihelion, 0).
+// Sun is at (0,0). Distance from sun = perihelion. Correct!
+// So we use: earth_x = ORBIT_C + ORBIT_A*cos(θ), earth_z = ORBIT_B*sin(θ).
+
+const sunMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(0.35, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0xffe9c7 })
+);
+scene.add(sunMesh);
+// Sun glow
+const sunGlow = new THREE.Mesh(
+  new THREE.SphereGeometry(0.65, 32, 32),
+  new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.BackSide,
+    vertexShader: `varying vec3 vN; void main(){ vN=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader: `varying vec3 vN; void main(){ float r=pow(1.0-abs(vN.z),2.2); gl_FragColor=vec4(1.0,0.82,0.45, r*0.7);}`,
+  })
+);
+sunMesh.add(sunGlow);
+
+// Sun label
+const sunLabelEl = document.createElement('div');
+sunLabelEl.textContent = '太阳';
+sunLabelEl.style.cssText = `color:#f4a853;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;text-shadow:0 0 8px rgba(0,0,0,0.9);transform:translate(12px,-8px);pointer-events:none;`;
+const sunLabel = new CSS2DObject(sunLabelEl);
+sunLabel.position.set(0.4, 0, 0);
+sunMesh.add(sunLabel);
+
+// ====================== ORBIT ELLIPSE ======================
+const orbitPts = [];
+const ORB_SEGS = 256;
+for (let i = 0; i <= ORB_SEGS; i++) {
+  const th = (i / ORB_SEGS) * Math.PI * 2;
+  orbitPts.push(new THREE.Vector3(
+    ORBIT_C + ORBIT_A * Math.cos(th),
+    0,
+    ORBIT_B * Math.sin(th)
+  ));
+}
+const orbitLine = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints(orbitPts),
+  new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 })
+);
+scene.add(orbitLine);
+
+// Perihelion / aphelion markers
+function makeOrbitalMarker(text, x, z, color) {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `color:${color};font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.12em;text-shadow:0 0 6px rgba(0,0,0,0.9);pointer-events:none;`;
+  const obj = new CSS2DObject(el);
+  obj.position.set(x, 0.1, z);
+  return obj;
+}
+// Aphelion θ=0: x = ORBIT_C + ORBIT_A, z = 0
+scene.add(makeOrbitalMarker('远日点 7月', ORBIT_C + ORBIT_A + 0.3, 0, '#6db3d9'));
+// Perihelion θ=π: x = ORBIT_C - ORBIT_A, z = 0
+scene.add(makeOrbitalMarker('近日点 1月', ORBIT_C - ORBIT_A - 0.3, 0, '#f4a853'));
+
+// ====================== SEASON NODES ======================
+// Four season positions on the orbit (doy → θ)
+// We need doyToTheta: doy 0 = Jan 1.
+// Perihelion ~Jan 3 (doy≈3) → θ = π (left of sun)
+// Aphelion ~Jul 4 (doy≈185) → θ = 0 (right of sun)
+// Vernal equinox ~Mar 21 (doy=80)
+// Summer solstice ~Jun 22 (doy=173)
+// Autumnal equinox ~Sep 23 (doy=266)
+// Winter solstice ~Dec 22 (doy=356)
+function doyToTheta(doy) {
+  // θ increases from 0 at aphelion (doy~185), going counter-clockwise
+  // Map: doy=185 → θ=0; doy=0/365 → θ=π; etc.
+  const fraction = ((doy - 185) / 365.25 + 1) % 1;
+  return fraction * Math.PI * 2; // 0 at aphelion, increases CCW
+}
+function earthPosFromDoy(doy) {
+  const th = doyToTheta(doy);
+  return new THREE.Vector3(
+    ORBIT_C + ORBIT_A * Math.cos(th),
+    0,
+    ORBIT_B * Math.sin(th)
+  );
+}
+
+const SEASONS = [
+  { name: '春分 3/21', doy: 80,  color: '#7dc48a' },
+  { name: '夏至 6/22', doy: 173, color: '#f4a853' },
+  { name: '秋分 9/23', doy: 266, color: '#6db3d9' },
+  { name: '冬至 12/22',doy: 356, color: '#8a95a8' },
+];
+const seasonNodesGroup = new THREE.Group();
+SEASONS.forEach(s => {
+  const pos = earthPosFromDoy(s.doy);
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 12, 12),
+    new THREE.MeshBasicMaterial({ color: s.color })
+  );
+  dot.position.copy(pos);
+  seasonNodesGroup.add(dot);
+  const el = document.createElement('div');
+  el.textContent = s.name;
+  el.style.cssText = `color:${s.color};font-family:'Noto Sans SC',sans-serif;font-size:10px;font-weight:500;text-shadow:0 0 6px rgba(0,0,0,0.9);pointer-events:none;white-space:nowrap;transform:translateY(-14px);`;
+  const lbl = new CSS2DObject(el);
+  lbl.position.copy(pos.clone().add(new THREE.Vector3(0, 0.1, 0)));
+  seasonNodesGroup.add(lbl);
+});
+scene.add(seasonNodesGroup);
+
+// ====================== EARTH (two-group architecture) ======================
+// earthTiltGroup: positioned on orbit, tilted by axial tilt angle (fixed direction in space)
+// earthSpinGroup (child): rotates around local Y axis for day/night cycle
+//
+// CRITICAL: earthTiltGroup.quaternion = tilt quaternion * orbit-position quaternion
+// But in Three.js, setting position doesn't affect rotation, so we simply:
+//   earthTiltGroup.position = computed orbit position
+//   earthTiltGroup.setRotationFromAxisAngle(TILT_AXIS, TILT_ANGLE)
+//   where TILT_AXIS is fixed in WORLD space (always pointing the same direction).
+//
+// We define the tilt axis as: the axis perpendicular to the sun direction in the orbital plane,
+// rotated 90° from the north direction in the orbital plane.
+// For simplicity: tilt axis = world X axis (fixed). Tilt = rotation around X by obliquity angle.
+// This means north pole leans toward +X. At summer solstice (Earth is on the -X side of sun),
+// the north pole leans toward sun → northern hemisphere summer. This is correct.
+
+const TILT_AXIS = new THREE.Vector3(0, 0, 1); // fixed in world space (into screen)
+
+const earthTiltGroup = new THREE.Group();
+scene.add(earthTiltGroup);
+
+const earthSpinGroup = new THREE.Group();
+earthTiltGroup.add(earthSpinGroup);
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  BEGIN: SHARED EARTH RENDER BLOCK v2                                ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+const TEX_EARTH_DAY   = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_atmos_2048.jpg';
+const TEX_EARTH_SPEC  = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_specular_2048.jpg';
+const TEX_EARTH_NORM  = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_normal_2048.jpg';
+const TEX_EARTH_NIGHT = 'https://cdn.jsdelivr.net/gh/vasturiano/three-globe@2.31.1/example/img/earth-night.jpg';
+const TEX_EARTH_CLOUD = 'https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png';
+
+const texLoader = new THREE.TextureLoader();
+texLoader.crossOrigin = 'anonymous';
+
+const placeholderCanvas = document.createElement('canvas');
+placeholderCanvas.width = 4; placeholderCanvas.height = 2;
+const pctx = placeholderCanvas.getContext('2d');
+pctx.fillStyle = '#0e1830'; pctx.fillRect(0,0,4,2);
+const placeholderTex = new THREE.CanvasTexture(placeholderCanvas);
+placeholderTex.colorSpace = THREE.SRGBColorSpace;
+
+const earthVert = `
+  varying vec3 vNormal;
+  varying vec3 vWorldPos;
+  varying vec2 vUv;
+  void main() {
+    vNormal = normalize(mat3(modelMatrix) * normal);
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorldPos = wp.xyz;
+    vUv = uv;
+    gl_Position = projectionMatrix * viewMatrix * wp;
+  }
+`;
+const earthFrag = `
+  precision highp float;
+  varying vec3 vNormal;
+  varying vec3 vWorldPos;
+  varying vec2 vUv;
+  uniform vec3 uSunDir;
+  uniform sampler2D uDayMap;
+  uniform sampler2D uSpecMap;
+  uniform sampler2D uNightMap;
+  uniform sampler2D uNormalMap;
+  uniform float uHasTex;
+  uniform float uHasSpec;
+  uniform float uHasNight;
+  uniform float uHasNorm;
+
+  void main() {
+    vec3 rawN = normalize(vNormal);
+    float lon = atan(rawN.z, rawN.x);
+    float lat = asin(clamp(rawN.y, -1.0, 1.0));
+    vec2 uv = vec2(lon / (2.0 * 3.14159265) + 0.5, 0.5 - lat / 3.14159265);
+
+    vec3 dayCol = uHasTex > 0.5 ? texture2D(uDayMap, uv).rgb : vec3(0.12, 0.18, 0.28);
+
+    vec3 N = rawN;
+    if (uHasNorm > 0.5) {
+      vec3 mapN = texture2D(uNormalMap, uv).rgb * 2.0 - 1.0;
+      vec3 T = normalize(cross(vec3(0.0, 1.0, 0.0), N));
+      vec3 B = normalize(cross(N, T));
+      float poleGuard = 1.0 - smoothstep(0.97, 0.999, abs(N.y));
+      N = normalize(mix(N, mat3(T, B, N) * mapN, poleGuard));
+    }
+
+    float lighting = dot(N, normalize(uSunDir));
+    float dayF   = smoothstep(-0.12, 0.18, lighting);
+    float nightF = 1.0 - smoothstep(-0.25, 0.05, lighting);
+
+    vec3 nightLights = vec3(0.0);
+    if (uHasNight > 0.5) {
+      vec3 nl = texture2D(uNightMap, uv).rgb;
+      nightLights = nl * nl * 2.8;
+    }
+    vec3 nightCol = dayCol * 0.04 + vec3(0.006, 0.010, 0.018) + nightLights * nightF;
+    vec3 litDay = dayCol * (0.32 + 0.78 * max(lighting, 0.0));
+
+    float specMask = uHasSpec > 0.5 ? texture2D(uSpecMap, uv).r : 0.0;
+    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+    vec3 halfDir = normalize(normalize(uSunDir) + viewDir);
+    float specVal = pow(max(dot(N, halfDir), 0.0), 36.0) * specMask * dayF;
+    litDay += vec3(1.0, 0.96, 0.82) * specVal * 0.85;
+
+    vec3 col = mix(nightCol, litDay, dayF);
+    float rim = 1.0 - max(dot(viewDir, rawN), 0.0);
+    col += vec3(0.25, 0.52, 0.88) * pow(rim, 3.2) * 0.6 * (0.3 + 0.7 * dayF);
+
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+const earthMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uSunDir:    { value: new THREE.Vector3(1, 0, 0) },
+    uDayMap:    { value: placeholderTex },
+    uSpecMap:   { value: placeholderTex },
+    uNightMap:  { value: placeholderTex },
+    uNormalMap: { value: placeholderTex },
+    uHasTex:    { value: 0.0 },
+    uHasSpec:   { value: 0.0 },
+    uHasNight:  { value: 0.0 },
+    uHasNorm:   { value: 0.0 },
+  },
+  vertexShader: earthVert,
+  fragmentShader: earthFrag,
+});
+const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS, 96, 64), earthMat);
+earthSpinGroup.add(earthMesh);
+
+const atmoMat = new THREE.ShaderMaterial({
+  vertexShader: `varying vec3 vNormal; varying vec3 vWorldPos; void main(){ vNormal=normalize(mat3(modelMatrix)*normal); vec4 wp=modelMatrix*vec4(position,1.); vWorldPos=wp.xyz; gl_Position=projectionMatrix*viewMatrix*wp;}`,
+  fragmentShader: `varying vec3 vNormal; varying vec3 vWorldPos; void main(){ vec3 v=normalize(cameraPosition-vWorldPos); float rim=1.0-max(dot(v,normalize(vNormal)),0.0); float a=pow(rim,2.5)*0.9; gl_FragColor=vec4(vec3(0.3,0.55,0.85), a);}`,
+  transparent: true, side: THREE.BackSide, depthWrite: false,
+});
+earthSpinGroup.add(new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 1.035, 64, 48), atmoMat));
+
+// Cloud layer
+const cloudPlaceholder = (() => {
+  const c = document.createElement('canvas'); c.width = 2; c.height = 2;
+  c.getContext('2d').clearRect(0,0,2,2);
+  return new THREE.CanvasTexture(c);
+})();
+const cloudMat = new THREE.MeshLambertMaterial({
+  map: cloudPlaceholder, alphaMap: cloudPlaceholder,
+  transparent: true, opacity: 0.82, depthWrite: false,
+});
+const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 1.012, 96, 64), cloudMat);
+earthSpinGroup.add(cloudMesh);
+
+// Texture loading
+texLoader.load(TEX_EARTH_DAY,
+  t => { t.colorSpace = THREE.SRGBColorSpace; earthMat.uniforms.uDayMap.value = t; earthMat.uniforms.uHasTex.value = 1.0; earthMat.needsUpdate = true; });
+texLoader.load(TEX_EARTH_SPEC,
+  t => { earthMat.uniforms.uSpecMap.value = t; earthMat.uniforms.uHasSpec.value = 1.0; });
+texLoader.load(TEX_EARTH_NORM,
+  t => { earthMat.uniforms.uNormalMap.value = t; earthMat.uniforms.uHasNorm.value = 1.0; earthMat.needsUpdate = true; });
+texLoader.load(TEX_EARTH_NIGHT,
+  t => { t.colorSpace = THREE.SRGBColorSpace; earthMat.uniforms.uNightMap.value = t; earthMat.uniforms.uHasNight.value = 1.0; earthMat.needsUpdate = true; });
+texLoader.load(TEX_EARTH_CLOUD,
+  t => { t.colorSpace = THREE.SRGBColorSpace; cloudMat.map = t; cloudMat.alphaMap = t; cloudMat.needsUpdate = true; });
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  END: SHARED EARTH RENDER BLOCK v2                                  ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+// ====================== EARTH OVERLAYS (module-specific) ======================
+// These are children of earthTiltGroup (tilt, not spin) so they stay fixed
+// relative to the tilt direction.
+
+// Rotation axis line
+const axisLine = (() => {
+  const len = EARTH_RADIUS * 1.8;
+  const pts = [new THREE.Vector3(0, -len, 0), new THREE.Vector3(0, len, 0)];
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color: 0xf4a853, transparent: true, opacity: 0.7 })
+  );
+})();
+earthTiltGroup.add(axisLine);
+
+// Tropics (children of earthSpinGroup so they rotate with earth but are layer-toggled)
+function makeLatCircle(lat, color, opacity = 0.65) {
+  const R = EARTH_RADIUS * 1.004;
+  const r = R * Math.cos(lat * DEG), y = R * Math.sin(lat * DEG);
+  const pts = [];
+  for (let i = 0; i <= 128; i++) {
+    const t = (i / 128) * Math.PI * 2;
+    pts.push(new THREE.Vector3(r * Math.cos(t), y, r * Math.sin(t)));
+  }
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity })
+  );
+}
+const tropicsGroup = new THREE.Group();
+// Tropics are added to earthSpinGroup (they rotate with earth for realism)
+earthSpinGroup.add(tropicsGroup);
+// Initial tropics — updated when tilt changes
+function rebuildTropics(tilt) {
+  tropicsGroup.clear();
+  if (tilt > 0.1) {
+    tropicsGroup.add(makeLatCircle(tilt, 0xf4a853));
+    tropicsGroup.add(makeLatCircle(-tilt, 0xf4a853));
+    tropicsGroup.add(makeLatCircle(90 - tilt, 0x6db3d9, 0.5));
+    tropicsGroup.add(makeLatCircle(-(90 - tilt), 0x6db3d9, 0.5));
+  }
+  // Equator
+  tropicsGroup.add(makeLatCircle(0, 0xe85d4a, 0.55));
+}
+rebuildTropics(23.4);
+
+// Terminator — in earthTiltGroup frame (doesn't spin with earth, but tilts with axis)
+// It's a great circle perpendicular to the sun direction IN THE TILTED FRAME.
+// Since sun direction in the tilted frame changes as earth orbits, we recompute it each frame.
+// We represent it as a circle in the Y-Z plane (normal = +X in tilted frame),
+// then rotate it to be perpendicular to the local sun direction.
+const terminatorHolder = new THREE.Group();
+earthTiltGroup.add(terminatorHolder);
+
+const terminatorCirclePts = [];
+for (let i = 0; i <= 256; i++) {
+  const t = (i / 256) * Math.PI * 2;
+  terminatorCirclePts.push(new THREE.Vector3(0, Math.sin(t), Math.cos(t)).multiplyScalar(EARTH_RADIUS * 1.006));
+}
+const terminatorLine = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints(terminatorCirclePts),
+  new THREE.LineBasicMaterial({ color: 0x6db3d9, transparent: true, opacity: 0.7 })
+);
+terminatorHolder.add(terminatorLine);
+
+// Sun rays (world space)
+const sunRaysGroup = new THREE.Group();
+function buildSunRays(sunPos) {
+  sunRaysGroup.clear();
+  const earthPos = earthTiltGroup.position;
+  const dir = new THREE.Vector3().subVectors(earthPos, sunPos).normalize();
+  const perp1 = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0,1,0)).normalize();
+  const perp2 = new THREE.Vector3().crossVectors(dir, perp1).normalize();
+  for (let a = -1; a <= 1; a++) {
+    for (let b = -1; b <= 1; b++) {
+      const offset = perp1.clone().multiplyScalar(a * 0.5).add(perp2.clone().multiplyScalar(b * 0.5));
+      const start = sunPos.clone().add(offset).add(dir.clone().multiplyScalar(0.5));
+      const end = earthPos.clone().add(offset).add(dir.clone().multiplyScalar(-EARTH_RADIUS * 1.2));
+      const len = start.distanceTo(end);
+      const arrow = new THREE.ArrowHelper(dir.clone(), start, len, 0xf4a853, 0.12, 0.07);
+      arrow.line.material.transparent = true; arrow.line.material.opacity = 0.55;
+      sunRaysGroup.add(arrow);
+    }
+  }
+}
+scene.add(sunRaysGroup);
+
+// North pole label
+const npLabelEl = document.createElement('div');
+npLabelEl.textContent = 'N';
+npLabelEl.style.cssText = `color:#e8ecf3;font-family:'JetBrains Mono',monospace;font-size:12px;text-shadow:0 0 6px rgba(0,0,0,0.9);pointer-events:none;`;
+const npLabel = new CSS2DObject(npLabelEl);
+npLabel.position.set(0, EARTH_RADIUS * 1.9, 0);
+earthTiltGroup.add(npLabel);
+
+// ====================== STATE ======================
+const state = {
+  doy: 80,
+  tilt: 23.4,
+  speed: 20,
+  paused: false,
+  spinAngle: 0,       // Earth self-rotation angle
+};
+
+// ====================== CONTROLS ======================
+const kpSelect = document.getElementById('kp-select');
+const kpBody = document.getElementById('kp-body');
+const kpOverlay = document.getElementById('kp-overlay');
+function updateKP() { kpBody.innerHTML = KP_DOCS[kpSelect.value]; }
+kpSelect.addEventListener('change', updateKP);
+updateKP();
+document.getElementById('kp-close').addEventListener('click', () => {
+  kpOverlay.style.display = kpOverlay.style.display === 'none' ? '' : 'none';
+});
+
+const doyInput = document.getElementById('doy');
+document.getElementById('doy').addEventListener('input', () => { state.doy = +doyInput.value; });
+document.querySelectorAll('[data-doy]').forEach(btn => {
+  btn.addEventListener('click', () => { state.doy = +btn.dataset.doy; doyInput.value = state.doy; });
+});
+
+const tiltInput = document.getElementById('tilt');
+const tiltValue = document.getElementById('tilt-value');
+tiltInput.addEventListener('input', () => {
+  state.tilt = +tiltInput.value;
+  tiltValue.textContent = state.tilt.toFixed(1) + '°';
+  rebuildTropics(state.tilt);
+});
+
+const speedInput = document.getElementById('speed');
+const speedValue = document.getElementById('speed-value');
+speedInput.addEventListener('input', () => {
+  state.speed = +speedInput.value;
+  speedValue.textContent = state.speed + '×';
+});
+
+const pauseBtn = document.getElementById('btn-pause');
+pauseBtn.addEventListener('click', () => {
+  state.paused = !state.paused;
+  pauseBtn.textContent = state.paused ? '继续' : '暂停';
+});
+document.getElementById('btn-reset-view').addEventListener('click', () => {
+  camera.position.set(0, 10, 14);
+  controls.target.set(0, 0, 0);
+  controls.update();
+});
+document.querySelectorAll('[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.view === 'top') camera.position.set(0, 22, 0.01);
+    else camera.position.set(14, 4, 14);
+    controls.target.set(0, 0, 0);
+    controls.update();
+  });
+});
+
+document.getElementById('layer-orbit').addEventListener('change', e => { orbitLine.visible = e.target.checked; });
+document.getElementById('layer-axis').addEventListener('change', e => { axisLine.visible = e.target.checked; npLabel.element.style.display = e.target.checked ? '' : 'none'; });
+document.getElementById('layer-terminator').addEventListener('change', e => { terminatorHolder.visible = e.target.checked; });
+document.getElementById('layer-tropics').addEventListener('change', e => { tropicsGroup.visible = e.target.checked; });
+document.getElementById('layer-sunray').addEventListener('change', e => { sunRaysGroup.visible = e.target.checked; });
+document.getElementById('layer-nodes').addEventListener('change', e => { seasonNodesGroup.visible = e.target.checked; });
+
+// ====================== DECLINATION CURVE ======================
+const declCanvas = document.getElementById('decl-canvas');
+const declCtx = declCanvas.getContext('2d');
+function computeDecl(doy, tilt) {
+  return tilt * Math.sin(2 * Math.PI * (doy + 284) / 365.25);
+}
+function drawDeclCurve(currentDoy, tilt) {
+  const W = declCanvas.offsetWidth || 220;
+  const H = 100;
+  declCanvas.width = W; declCanvas.height = H;
+  declCtx.clearRect(0, 0, W, H);
+  // Background grid
+  declCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+  declCtx.lineWidth = 1;
+  [0, H/2, H].forEach(y => { declCtx.beginPath(); declCtx.moveTo(0, y); declCtx.lineTo(W, y); declCtx.stroke(); });
+  // Zero line
+  declCtx.strokeStyle = 'rgba(232,93,74,0.4)';
+  declCtx.beginPath(); declCtx.moveTo(0, H/2); declCtx.lineTo(W, H/2); declCtx.stroke();
+  // Curve
+  declCtx.strokeStyle = '#f4a853'; declCtx.lineWidth = 1.5;
+  declCtx.beginPath();
+  for (let d = 0; d <= 365; d++) {
+    const x = (d / 365) * W;
+    const decl = computeDecl(d, tilt);
+    const y = H/2 - (decl / 30) * (H/2 - 6);
+    d === 0 ? declCtx.moveTo(x, y) : declCtx.lineTo(x, y);
+  }
+  declCtx.stroke();
+  // Current doy cursor
+  const cx = (currentDoy / 365) * W;
+  const cy_val = computeDecl(currentDoy, tilt);
+  const cy = H/2 - (cy_val / 30) * (H/2 - 6);
+  declCtx.strokeStyle = '#ffffff'; declCtx.lineWidth = 1;
+  declCtx.setLineDash([3,3]);
+  declCtx.beginPath(); declCtx.moveTo(cx, 0); declCtx.lineTo(cx, H); declCtx.stroke();
+  declCtx.setLineDash([]);
+  declCtx.fillStyle = '#ffffff';
+  declCtx.beginPath(); declCtx.arc(cx, cy, 3, 0, Math.PI*2); declCtx.fill();
+  // Labels
+  declCtx.fillStyle = 'rgba(90,101,119,0.9)';
+  declCtx.font = '9px JetBrains Mono, monospace';
+  declCtx.fillText('+' + tilt.toFixed(1) + '°', 2, 12);
+  declCtx.fillText('-' + tilt.toFixed(1) + '°', 2, H - 3);
+}
+
+// ====================== HELPER: date from doy ======================
+function dateFromDOY(doy) {
+  const d = new Date(2025, 0, 1);
+  d.setDate(d.getDate() + Math.round(doy));
+  const m = d.getMonth() + 1, day = d.getDate();
+  const specials = [{doy:80,n:'春分'},{doy:173,n:'夏至'},{doy:266,n:'秋分'},{doy:356,n:'冬至'}];
+  let prefix = '';
+  for (const s of specials) { if (Math.abs(doy-s.doy)<4) prefix = s.n+' · '; }
+  return `${prefix}${m}/${day}`;
+}
+
+// ====================== SIM LOOP ======================
+const clock = new THREE.Clock();
+const _sunDir = new THREE.Vector3();
+const _earthPos = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  if (!state.paused) {
+    // Advance doy
+    state.doy = (state.doy + dt * state.speed / 365.25) % 365;
+    doyInput.value = Math.round(state.doy);
+    // Earth self-rotation (much faster than orbit)
+    state.spinAngle += dt * state.speed * (360 / 1) * DEG; // one spin per simulated day
+  }
+
+  const decl = computeDecl(state.doy, state.tilt);
+  const tiltRad = state.tilt * DEG;
+
+  // Earth world position
+  const theta = doyToTheta(state.doy);
+  const ex = ORBIT_C + ORBIT_A * Math.cos(theta);
+  const ez = ORBIT_B * Math.sin(theta);
+  earthTiltGroup.position.set(ex, 0, ez);
+
+  // Set axial tilt: fixed direction in world space (TILT_AXIS = Z axis)
+  // We rotate around TILT_AXIS by -tiltRad so north pole leans toward +X
+  earthTiltGroup.setRotationFromAxisAngle(TILT_AXIS, -tiltRad);
+
+  // Earth spin (inside tiltGroup local frame)
+  earthSpinGroup.rotation.y = state.spinAngle;
+  // Clouds drift slightly faster
+  cloudMesh.rotation.y += dt * 0.00008;
+
+  // Sun direction in world space (from earth toward sun at origin)
+  _sunDir.set(-ex, 0, -ez).normalize();
+
+  // Sun direction in earthTiltGroup local space (for terminator and shader)
+  // earthMat.uniforms.uSunDir is used in world space by the shader (via vWorldPos)
+  earthMat.uniforms.uSunDir.value.copy(_sunDir);
+
+  // Terminator rotation: align its normal (+X in local frame) to sun direction in local frame
+  const localSunDir = _sunDir.clone().applyQuaternion(earthTiltGroup.quaternion.clone().invert());
+  // Rotate terminator so its plane is perpendicular to localSunDir
+  terminatorHolder.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), localSunDir);
+
+  // Sun rays
+  buildSunRays(new THREE.Vector3(0, 0, 0));
+
+  // Right panel updates
+  const dist = (new THREE.Vector3(ex, 0, ez).length() / ORBIT_A).toFixed(3);
+  // Orbital velocity: v = sqrt(GM(2/r - 1/a)). Ratio to Earth mean (29.8 km/s):
+  // v/v_mean = sqrt(a/r * (2 - r/a)) ... approximate for ellipse
+  const r_au = (new THREE.Vector3(ex, 0, ez).length() / ORBIT_A);
+  const v_rel = Math.sqrt(1/r_au * (2 - r_au));
+  document.getElementById('d-date').textContent = dateFromDOY(state.doy);
+  document.getElementById('d-tilt').textContent = state.tilt.toFixed(1) + '°';
+  document.getElementById('d-decl').textContent = (decl >= 0 ? '+' : '') + decl.toFixed(1) + '°';
+  document.getElementById('d-dist').textContent = r_au.toFixed(3) + ' AU';
+  document.getElementById('d-vel').textContent = (29.8 * v_rel).toFixed(1) + ' km/s';
+
+  // Update doy label
+  document.getElementById('doy-label').textContent = dateFromDOY(state.doy);
+  document.getElementById('doy-value').textContent = 'doy ' + Math.round(state.doy);
+  document.getElementById('tilt-value').textContent = state.tilt.toFixed(1) + '°';
+
+  // Declination curve
+  drawDeclCurve(state.doy, state.tilt);
+
+  controls.update();
+  composer.render();
+  labelRenderer.render(scene, camera);
+}
+animate();
+
+// ====================== RESIZE ======================
+window.addEventListener('resize', () => {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  composer.setSize(w, h);
+  bloomPass.resolution.set(w, h);
+  labelRenderer.setSize(w, h);
+});
+
+</script>
+</body>
+</html>

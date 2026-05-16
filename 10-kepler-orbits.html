@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>开普勒定律 · 椭圆轨道 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .slider-row{margin-bottom:14px;}
+  .slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-label{font-size:12px;color:var(--text-secondary);}
+  .slider-value{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);font-weight:500;}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:2px;background:var(--line-strong);outline:none;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:var(--accent-warm);border-radius:50%;cursor:pointer;border:2px solid var(--bg-deep);box-shadow:0 0 0 1px var(--accent-warm);}
+  .formula-box{background:rgba(244,168,83,.06);border:1px solid rgba(244,168,83,.2);border-radius:2px;padding:12px;margin-top:8px;}
+  .formula-text{font-family:var(--font-mono);font-size:12px;color:var(--accent-warm);text-align:center;margin-bottom:5px;line-height:1.6;}
+  .formula-sub{font-size:11px;color:var(--text-dim);line-height:1.6;}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#050c18 0%,#020408 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay[hidden]{display:none;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:24px 20px;}
+  .panel-right::-webkit-scrollbar{width:4px;}.panel-right::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .data-section{margin-bottom:20px;}
+  .data-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);margin-bottom:8px;}
+  .data-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);}
+  .data-row-label{font-size:11px;color:var(--text-secondary);}
+  .data-row-val{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);}
+  .planet-table{width:100%;border-collapse:collapse;margin-top:6px;}
+  .planet-table th,.planet-table td{font-size:10px;padding:5px 4px;text-align:left;border-bottom:1px solid var(--line);}
+  .planet-table th{font-family:var(--font-mono);color:var(--text-dim);font-weight:400;letter-spacing:.08em;}
+  .planet-table td{font-family:var(--font-mono);color:var(--text-primary);}
+  .struggle-box{background:rgba(232,93,74,.06);border:1px solid rgba(232,93,74,.25);border-radius:2px;padding:12px;margin-top:12px;}
+  .struggle-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.15em;color:var(--accent-hot);margin-bottom:6px;}
+  .struggle-text{font-size:12px;color:var(--text-secondary);line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-title"><em>开普勒</em>三定律</div>
+      <div class="brand-sub">Module 10 · Kepler's Laws</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-sel">
+        <option value="first">第一定律：轨道是椭圆，太阳在焦点</option>
+        <option value="second">第二定律：等面积定律，近日点速度快</option>
+        <option value="third">第三定律：T² ∝ a³</option>
+        <option value="earth">地球轨道参数：e=0.0167</option>
+        <option value="compare">行星对比：离心率与周期</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">轨道参数</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">半长轴 a（AU）</span>
+          <span class="slider-value" id="a-val">1.00</span>
+        </div>
+        <input type="range" id="sl-a" min="0.3" max="6" value="1" step="0.01">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">离心率 e</span>
+          <span class="slider-value" id="e-val">0.017</span>
+        </div>
+        <input type="range" id="sl-e" min="0" max="0.9" value="0.017" step="0.001">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">快速切换行星</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setPlanet(1.0,0.017)">地球 Earth</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setPlanet(1.524,0.093)">火星 Mars</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setPlanet(5.203,0.049)">木星 Jupiter</button>
+        <button class="btn" style="padding:7px 6px;background:transparent;border:1px solid var(--line-strong);color:var(--text-secondary);font-family:var(--font-sans);font-size:11px;cursor:pointer;border-radius:2px;" onclick="setPlanet(0.387,0.206)">水星 Mercury</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">定律公式</div>
+      <div class="formula-box">
+        <div class="formula-text">① 椭圆轨道：r = a(1-e²)/(1+e·cosθ)</div>
+        <div class="formula-text">② 等面积：dA/dt = const</div>
+        <div class="formula-text">③ T² / a³ = 常数</div>
+        <div class="formula-sub">e：离心率（0=圆，0.999=极扁椭圆）<br>a：半长轴（AU）<br>T：公转周期（年）<br>地球：a=1AU，e=0.0167，T=1年</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: 3D -->
+  <div class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay" hidden>
+      <div class="kp-overlay-header">
+        <span class="kp-overlay-title">知识点说明</span>
+        <button class="kp-overlay-close" onclick="document.getElementById('kp-overlay').hidden=true">×</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="data-section">
+      <div class="data-label">轨道参数</div>
+      <div class="data-row"><span class="data-row-label">半长轴 a</span><span class="data-row-val" id="disp-a">—</span></div>
+      <div class="data-row"><span class="data-row-label">半短轴 b</span><span class="data-row-val" id="disp-b">—</span></div>
+      <div class="data-row"><span class="data-row-label">离心率 e</span><span class="data-row-val" id="disp-e">—</span></div>
+      <div class="data-row"><span class="data-row-label">近日点距离</span><span class="data-row-val" id="disp-peri">—</span></div>
+      <div class="data-row"><span class="data-row-label">远日点距离</span><span class="data-row-val" id="disp-aph">—</span></div>
+      <div class="data-row"><span class="data-row-label">公转周期 T</span><span class="data-row-val" id="disp-T">—</span></div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">实时位置</div>
+      <div class="data-row"><span class="data-row-label">当前 r（AU）</span><span class="data-row-val" id="disp-r">—</span></div>
+      <div class="data-row"><span class="data-row-label">速度（相对）</span><span class="data-row-val" id="disp-v">—</span></div>
+      <div class="data-row"><span class="data-row-label">真近点角 θ</span><span class="data-row-val" id="disp-theta">—</span></div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">八大行星 T²/a³</div>
+      <table class="planet-table">
+        <thead><tr><th>行星</th><th>a(AU)</th><th>T(yr)</th><th>T²/a³</th></tr></thead>
+        <tbody>
+          <tr><td>水星</td><td>0.387</td><td>0.241</td><td>1.001</td></tr>
+          <tr><td>金星</td><td>0.723</td><td>0.615</td><td>1.000</td></tr>
+          <tr><td>地球</td><td>1.000</td><td>1.000</td><td>1.000</td></tr>
+          <tr><td>火星</td><td>1.524</td><td>1.881</td><td>0.999</td></tr>
+          <tr><td>木星</td><td>5.203</td><td>11.86</td><td>0.998</td></tr>
+          <tr><td>土星</td><td>9.537</td><td>29.46</td><td>1.000</td></tr>
+          <tr><td>天王星</td><td>19.19</td><td>84.01</td><td>0.999</td></tr>
+          <tr><td>海王星</td><td>30.07</td><td>164.8</td><td>1.000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="struggle-box">
+      <div class="struggle-label">认知冲突</div>
+      <div class="struggle-text">
+        "冬天地球离太阳更远，所以北半球更冷"——<strong>错误！</strong>地球1月初在近日点（约1.471亿km），7月初在远日点（约1.521亿km）。北半球冬天实际上地球<strong>离太阳更近</strong>！冷热由太阳高度角和昼长决定，不是由距离决定。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const KP_DOCS={
+  first:`<strong>开普勒第一定律（椭圆定律）</strong>：所有行星的轨道是以太阳为焦点之一的椭圆。圆是椭圆的特例（e=0）。<br>地球轨道离心率e=0.0167，近似正圆，但近日点和远日点距离相差约500万km（约3.3%）。`,
+  second:`<strong>开普勒第二定律（等面积定律）</strong>：行星与太阳的连线在相等时间内扫过相等的面积。<br>→ 近日点速度快（约30.3km/s），远日点速度慢（约29.3km/s）。<br>→ 北半球冬半年（秋分→春分）历时约179天，夏半年约186天，正是这一定律的体现。`,
+  third:`<strong>开普勒第三定律（调和定律）</strong>：T² ∝ a³（以太阳为中心的相同引力常数下）。<br>以地球为基准（a=1AU，T=1年）：对所有行星 T²/a³ = 1。<br>可推知：a=5.2AU（木星）→ T=√(5.2³)=11.86年。`,
+  earth:`<strong>地球轨道参数</strong>：<br>a=1.000AU，e=0.0167，T=365.25天<br>近日点（1月3日）：r=0.9833AU≈1.471亿km<br>远日点（7月4日）：r=1.0167AU≈1.521亿km<br>近日点速度：~30.3km/s；远日点：~29.3km/s`,
+  compare:`<strong>行星对比</strong>：水星 e=0.206（最大），金星 e=0.007（最小）。<br>T²/a³对所有太阳系行星几乎完全相等，证明开普勒第三定律的精确性。`
+};
+document.getElementById('kp-sel').addEventListener('change',e=>{
+  const el=document.getElementById('kp-overlay');
+  document.getElementById('kp-body').innerHTML=KP_DOCS[e.target.value]||'';
+  el.hidden=false;
+});
+
+const canvas=document.getElementById('three-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setClearColor(0x010408,1);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.shadowMap.enabled=false;
+
+const labelRenderer=new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth,canvas.clientHeight);
+labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;';
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,2,0.01,200);
+camera.position.set(0,4,8);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.05;
+
+scene.add(new THREE.AmbientLight(0x112244,0.5));
+
+// Background stars
+const bgGeo=new THREE.BufferGeometry();
+const bgPos=[];
+for(let i=0;i<1000;i++){
+  const u=Math.random()*2-1,v=Math.random()*2-1,w=Math.random()*2-1;
+  const l=Math.sqrt(u*u+v*v+w*w);
+  bgPos.push(u/l*50, v/l*50, w/l*50);
+}
+bgGeo.setAttribute('position',new THREE.Float32BufferAttribute(bgPos,3));
+scene.add(new THREE.Points(bgGeo,new THREE.PointsMaterial({color:0xffffff,size:0.05,transparent:true,opacity:0.5})));
+
+// Sun
+const sunGeo=new THREE.SphereGeometry(0.2,32,24);
+const sunMat=new THREE.MeshBasicMaterial({color:0xffe080});
+const sunMesh=new THREE.Mesh(sunGeo,sunMat);
+scene.add(sunMesh);
+// Sun glow
+const sunLight=new THREE.PointLight(0xfff5d0,4,50);
+scene.add(sunLight);
+// Sun label
+const sunDiv=document.createElement('div');
+sunDiv.style.cssText='font-family:monospace;font-size:11px;color:#ffe080;background:rgba(5,8,17,.8);padding:2px 6px;border-radius:2px;';
+sunDiv.textContent='太阳';
+const sunLabel=new CSS2DObject(sunDiv);
+sunLabel.position.set(0,0.35,0);
+sunMesh.add(sunLabel);
+
+// Orbit curve mesh (rebuilt on param change)
+let orbitLine=null, sweepMesh=null;
+
+// Planet mesh
+const planetMesh=new THREE.Mesh(
+  new THREE.SphereGeometry(0.1,16,12),
+  new THREE.MeshPhongMaterial({color:0x6db3d9,emissive:0x112244})
+);
+scene.add(planetMesh);
+// Velocity arrow
+const velArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(0,0,0),0.5,0xf4a853,0.15,0.1);
+scene.add(velArrow);
+
+// Perihelion / aphelion labels
+let periDiv=null, aphDiv=null, periLabel=null, aphLabel=null;
+
+// Parameters
+let a_AU=1.0, e=0.017;
+function setPlanet(aNew, eNew){
+  a_AU=aNew; e=eNew;
+  document.getElementById('sl-a').value=aNew;
+  document.getElementById('sl-e').value=eNew;
+  document.getElementById('a-val').textContent=aNew.toFixed(2);
+  document.getElementById('e-val').textContent=eNew.toFixed(3);
+  rebuild();
+}
+window.setPlanet=setPlanet;
+
+// Scale: 1 AU = 2 units in scene
+const AU=2;
+let theta=0; // true anomaly
+
+function rebuild(){
+  const b_AU=a_AU*Math.sqrt(1-e*e);
+  const c_AU=a_AU*e; // focal distance
+  const T=Math.pow(a_AU,1.5); // years
+
+  // Orbit ellipse points (center at origin, sun at -c)
+  if(orbitLine) scene.remove(orbitLine);
+  const N=512;
+  const pts=[];
+  for(let i=0;i<=N;i++){
+    const th=i/N*Math.PI*2;
+    const r=a_AU*(1-e*e)/(1+e*Math.cos(th));
+    pts.push(new THREE.Vector3((r*Math.cos(th)-c_AU)*AU, 0, r*Math.sin(th)*AU));
+    // Note: sun is at focus, which is at x=-c from center → shift by -c
+  }
+  orbitLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color:0x334488,transparent:true,opacity:0.6}));
+  scene.add(orbitLine);
+
+  // Perihelion/aphelion dots
+  const periPos=new THREE.Vector3((a_AU*(1-e)-c_AU)*AU, 0, 0);
+  const aphPos=new THREE.Vector3((-a_AU*(1+e)-c_AU)*AU, 0, 0);
+  // (perihelion at theta=0: r=a(1-e), x=r-c = a(1-e)-ae = a-ae-ae = a(1-2e)... )
+  // Actually when theta=0: r=a(1-e²)/(1+e) = a(1-e); x=(r-c)*AU = (a(1-e)-ae)*AU = a(1-2e)*AU
+  // But sun is at x=0 in scene (origin). Planet pos: x_scene = (r*cos(th) - c)*AU
+  // At th=0: x = (a(1-e²)/(1+e) - ae)*AU = (a(1-e) - ae)*AU = a(1-2e)*AU ← perihelion to right
+  // At th=π: x = (-a(1-e²)/(1-e) - ae)*AU = (-a(1+e) - ae)*AU = -a(1+2e)*AU... hmm
+  // Let me just compute directly
+  const r_peri=a_AU*(1-e*e)/(1+e);
+  const r_aph=a_AU*(1-e*e)/(1-e);
+  const p_peri=new THREE.Vector3((r_peri-c_AU)*AU, 0.05, 0);
+  const p_aph=new THREE.Vector3((-r_aph-c_AU)*AU, 0.05, 0);
+
+  // Update readout
+  document.getElementById('disp-a').textContent=a_AU.toFixed(3)+' AU';
+  document.getElementById('disp-b').textContent=b_AU.toFixed(3)+' AU';
+  document.getElementById('disp-e').textContent=e.toFixed(4);
+  document.getElementById('disp-peri').textContent=r_peri.toFixed(4)+' AU';
+  document.getElementById('disp-aph').textContent=r_aph.toFixed(4)+' AU';
+  document.getElementById('disp-T').textContent=T.toFixed(3)+' 年';
+}
+
+function getPos(th){
+  const r=a_AU*(1-e*e)/(1+e*Math.cos(th));
+  const c_AU=a_AU*e;
+  return {
+    x:(r*Math.cos(th)-c_AU)*AU,
+    z:r*Math.sin(th)*AU,
+    r
+  };
+}
+
+// Sweep sector (last N steps)
+const TRAIL_STEPS=60;
+let trailThetas=[];
+let sweepMeshes=[];
+
+function updatePlanet(dt){
+  // Kepler equation: dθ/dt = h/r² where h=sqrt(GM·a(1-e²))
+  // Angular momentum conservation: r²·dθ/dt = const = sqrt(a(1-e²)) (in AU-yr units)
+  const p=a_AU*(1-e*e);
+  const r=a_AU*(1-e*e)/(1+e*Math.cos(theta));
+  const dtheta=Math.sqrt(p)/(r*r); // in rad/yr
+  const T=Math.pow(a_AU,1.5);
+  // Speed up display: complete one orbit per ~8 seconds
+  const speedScale=Math.PI*2/8; // rad/s display speed (full orbit = 2pi/8 seconds)
+  theta += dtheta * dt * speedScale / (Math.PI*2/T); // normalize to display speed
+
+  const pos=getPos(theta);
+  planetMesh.position.set(pos.x, 0, pos.z);
+
+  // Velocity direction (perpendicular to r, in direction of motion)
+  const pos2=getPos(theta+0.01);
+  const velDir=new THREE.Vector3(pos2.x-pos.x, 0, pos2.z-pos.z).normalize();
+  // Speed ∝ 1/r (vis-viva: v = sqrt(GM(2/r - 1/a)))
+  const v_rel=Math.sqrt(1/pos.r); // relative speed
+  velArrow.position.set(pos.x, 0, pos.z);
+  velArrow.setDirection(velDir);
+  velArrow.setLength(v_rel*0.6, 0.15, 0.1);
+
+  // Real-time readout
+  document.getElementById('disp-r').textContent=pos.r.toFixed(4)+' AU';
+  document.getElementById('disp-v').textContent=(v_rel*100).toFixed(0)+'%  (相对近日点)';
+  document.getElementById('disp-theta').textContent=((theta%(Math.PI*2))*(180/Math.PI)).toFixed(1)+'°';
+
+  // Draw sweep sector (last arc of ~30°)
+  sweepMeshes.forEach(m=>scene.remove(m)); sweepMeshes=[];
+  const sunPos=new THREE.Vector3(0,0,0);
+  const arcPts=[sunPos.clone()];
+  const steps=40;
+  const thetaStart=theta-Math.PI/6;
+  for(let i=0;i<=steps;i++){
+    const th2=thetaStart+i/steps*Math.PI/6;
+    const p2=getPos(th2);
+    arcPts.push(new THREE.Vector3(p2.x, 0, p2.z));
+  }
+  arcPts.push(sunPos.clone());
+  const sweepLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(arcPts),
+    new THREE.LineBasicMaterial({color:0x7dc48a,transparent:true,opacity:0.4}));
+  scene.add(sweepLine);
+  sweepMeshes.push(sweepLine);
+
+  // Reference sector at aphelion (same angle, different arc length — demonstrates equal areas)
+  const arcPts2=[sunPos.clone()];
+  const thetaAph=Math.PI-Math.PI/6/2;
+  for(let i=0;i<=steps;i++){
+    const th2=thetaAph+i/steps*Math.PI/6;
+    const p2=getPos(th2);
+    arcPts2.push(new THREE.Vector3(p2.x,0,p2.z));
+  }
+  arcPts2.push(sunPos.clone());
+  const sweepLine2=new THREE.Line(new THREE.BufferGeometry().setFromPoints(arcPts2),
+    new THREE.LineBasicMaterial({color:0xe85d4a,transparent:true,opacity:0.35}));
+  scene.add(sweepLine2);
+  sweepMeshes.push(sweepLine2);
+}
+
+// ── Sliders ────────────────────────────────────────────────────────────────────
+document.getElementById('sl-a').addEventListener('input',e=>{
+  a_AU=+e.target.value; document.getElementById('a-val').textContent=a_AU.toFixed(2); rebuild();
+});
+document.getElementById('sl-e').addEventListener('input',e=>{
+  e_val=+e.target.value; e=e_val; document.getElementById('e-val').textContent=e.toFixed(3); rebuild();
+});
+// avoid name conflict with event
+let e_val=0.017;
+document.getElementById('sl-e').addEventListener('input',ev=>{
+  e=+ev.target.value; document.getElementById('e-val').textContent=e.toFixed(3); rebuild();
+});
+
+// ── Resize & animate ──────────────────────────────────────────────────────────
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  renderer.setSize(w,h,false); labelRenderer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+rebuild();
+
+let last=0;
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=(t-last)/1000; last=t;
+  updatePlanet(Math.min(dt,0.05));
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

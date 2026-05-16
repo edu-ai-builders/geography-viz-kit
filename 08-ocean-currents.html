@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>世界洋流 · 3D 交互演示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg-deep:#070a13;--bg-panel:rgba(12,17,28,.82);--bg-panel-solid:#0c111c;--line:rgba(255,255,255,.08);--line-strong:rgba(255,255,255,.18);--text-primary:#e8ecf3;--text-secondary:#8a95a8;--text-dim:#5a6577;--accent-warm:#f4a853;--accent-hot:#e85d4a;--accent-cool:#6db3d9;--accent-green:#7dc48a;--font-display:'Fraunces','Noto Serif SC',serif;--font-sans:'Noto Sans SC',system-ui,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);overflow:hidden;font-weight:300;letter-spacing:.01em;}
+  #app{display:grid;grid-template-columns:340px 1fr 280px;height:100vh;}
+  .panel-left{background:var(--bg-panel);backdrop-filter:blur(20px);border-right:1px solid var(--line);overflow-y:auto;padding:28px 24px;}
+  .panel-left::-webkit-scrollbar{width:4px;}.panel-left::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .brand-block{margin-bottom:28px;}
+  .brand-title{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:-.01em;margin-bottom:6px;}
+  .brand-title em{font-style:italic;color:var(--accent-warm);font-weight:400;}
+  .brand-sub{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);}
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-decoration:none;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;}
+  .back-link:hover{color:var(--accent-warm);}
+  .section{margin-bottom:22px;}
+  .section-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.22em;font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'';width:6px;height:1px;background:var(--accent-warm);}
+  .kp-select{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--line-strong);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;border-radius:2px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3e%3cpath fill='none' stroke='%238a95a8' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 14px center;background-size:10px;}
+  .kp-select:hover{border-color:var(--accent-warm);}.kp-select option{background:var(--bg-panel-solid);}
+  .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin-top:6px;}
+  .check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer;user-select:none;}
+  .check input{appearance:none;width:14px;height:14px;border:1px solid var(--line-strong);border-radius:2px;cursor:pointer;position:relative;flex-shrink:0;}
+  .check input:checked{background:var(--accent-warm);border-color:var(--accent-warm);}
+  .check input:checked::after{content:'';position:absolute;left:3px;top:0;width:4px;height:8px;border:solid var(--bg-deep);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+  .canvas-wrap{position:relative;background:radial-gradient(ellipse at center,#0a1220 0%,#050811 100%);}
+  #three-canvas{display:block;width:100%;height:100%;cursor:grab;}
+  #three-canvas:active{cursor:grabbing;}
+  .kp-overlay{position:absolute;top:24px;left:24px;right:24px;max-width:720px;background:var(--bg-panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-left:2px solid var(--accent-warm);padding:16px 20px;border-radius:2px;z-index:10;}
+  .kp-overlay-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .kp-overlay-title{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.22em;color:var(--accent-warm);}
+  .kp-overlay-close{cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;background:none;border:none;}
+  .kp-overlay-body{font-size:13px;line-height:1.75;color:var(--text-secondary);}
+  .kp-overlay[hidden]{display:none;}
+  .panel-right{background:var(--bg-panel);backdrop-filter:blur(20px);border-left:1px solid var(--line);overflow-y:auto;padding:24px 20px;}
+  .panel-right::-webkit-scrollbar{width:4px;}.panel-right::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:2px;}
+  .data-section{margin-bottom:20px;}
+  .data-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.18em;font-family:var(--font-mono);margin-bottom:8px;}
+  .legend{display:flex;flex-direction:column;gap:7px;margin-top:6px;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary);}
+  .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .current-list{margin-top:4px;}
+  .current-item{padding:7px 10px;margin-bottom:5px;border-radius:2px;font-size:11px;border-left:2px solid;}
+  .current-warm{background:rgba(232,93,74,.12);border-color:#e85d4a;}
+  .current-cold{background:rgba(109,179,217,.12);border-color:#6db3d9;}
+  .current-name{font-weight:500;color:var(--text-primary);margin-bottom:2px;}
+  .current-desc{color:var(--text-secondary);font-size:10px;line-height:1.5;}
+  .struggle-box{background:rgba(232,93,74,.06);border:1px solid rgba(232,93,74,.25);border-radius:2px;padding:12px;margin-top:12px;}
+  .struggle-label{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.15em;color:var(--accent-hot);margin-bottom:6px;}
+  .struggle-text{font-size:12px;color:var(--text-secondary);line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <a class="back-link" href="./index.html">← 返回目录</a>
+    <div class="brand-block">
+      <div class="brand-title">世界<em>洋流</em>分布</div>
+      <div class="brand-sub">Module 08 · Ocean Currents</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">知识点</div>
+      <select class="kp-select" id="kp-sel">
+        <option value="pattern">洋流基本规律——大洋环流</option>
+        <option value="warm">暖流：增温增湿，渔业</option>
+        <option value="cold">寒流：降温减湿，渔场</option>
+        <option value="fishing">世界著名渔场</option>
+        <option value="climate">洋流对气候的影响</option>
+        <option value="thermohaline">热盐环流（深层）</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <div class="section-label">图层</div>
+      <div class="check-grid">
+        <label class="check"><input type="checkbox" id="lyr-warm" checked> 暖流</label>
+        <label class="check"><input type="checkbox" id="lyr-cold" checked> 寒流</label>
+        <label class="check"><input type="checkbox" id="lyr-fishing" checked> 渔场</label>
+        <label class="check"><input type="checkbox" id="lyr-labels" checked> 名称</label>
+        <label class="check"><input type="checkbox" id="lyr-animate" checked> 动画</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">规律</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.75;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:2px;">
+        北半球大洋：<strong>顺时针</strong>环流<br>
+        南半球大洋：<strong>逆时针</strong>环流<br>
+        大洋东岸（大陆西岸）：<span style="color:#6db3d9">寒流</span><br>
+        大洋西岸（大陆东岸）：<span style="color:#e85d4a">暖流</span><br>
+        南纬40–60°：<strong>西风漂流</strong>（寒流，绕行全球）
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: 3D -->
+  <div class="canvas-wrap">
+    <canvas id="three-canvas"></canvas>
+    <div class="kp-overlay" id="kp-overlay" hidden>
+      <div class="kp-overlay-header">
+        <span class="kp-overlay-title">知识点说明</span>
+        <button class="kp-overlay-close" onclick="document.getElementById('kp-overlay').hidden=true">×</button>
+      </div>
+      <div class="kp-overlay-body" id="kp-body">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="data-section">
+      <div class="data-label">图例</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#e85d4a;"></div>暖流（水温高于流经海区）</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#6db3d9;"></div>寒流（水温低于流经海区）</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f4a853;box-shadow:0 0 0 2px rgba(244,168,83,.4);"></div>世界著名渔场</div>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <div class="data-label">主要洋流</div>
+      <div class="current-list">
+        <div class="current-item current-warm">
+          <div class="current-name">北大西洋暖流</div>
+          <div class="current-desc">墨西哥湾流北上，使西欧气候温和湿润</div>
+        </div>
+        <div class="current-item current-warm">
+          <div class="current-name">日本暖流（黑潮）</div>
+          <div class="current-desc">北太平洋西岸，与亲潮交汇→北海道渔场</div>
+        </div>
+        <div class="current-item current-cold">
+          <div class="current-name">秘鲁寒流</div>
+          <div class="current-desc">南美西岸上升流，形成秘鲁渔场（世界最大）</div>
+        </div>
+        <div class="current-item current-cold">
+          <div class="current-name">千岛寒流（亲潮）</div>
+          <div class="current-desc">与黑潮交汇，带来丰富营养盐</div>
+        </div>
+        <div class="current-item current-cold">
+          <div class="current-name">加那利寒流</div>
+          <div class="current-desc">北大西洋东岸，使撒哈拉沿岸干燥</div>
+        </div>
+        <div class="current-item current-cold">
+          <div class="current-name">西风漂流</div>
+          <div class="current-desc">南纬40–60°绕行全球，世界最强大洋流</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="struggle-box">
+      <div class="struggle-label">认知冲突</div>
+      <div class="struggle-text">
+        "寒流流过的地方气候寒冷"——<strong>错误！</strong>寒流使气温低于同纬度平均，且减少降水，形成沙漠（如纳米布、阿塔卡马），而非极寒气候。<br><br>
+        寒暖流交汇处（渔场）：下层冷水上涌带来营养盐，吸引鱼类。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ── KP docs ───────────────────────────────────────────────────────────────────
+const KP_DOCS = {
+  pattern:`<strong>大洋环流规律</strong>：以副热带为中心。北半球顺时针，南半球逆时针。低纬度信风→赤道洋流（向西）；中纬度西风→西风漂流（向东）；大洋西岸受科氏力影响洋流强而窄（暖流）；东岸宽而弱（寒流）。`,
+  warm:`<strong>暖流</strong>：水温高于流经海区。沿大陆东岸（大洋西岸）向高纬度流动。增温增湿：使沿岸气候温暖湿润。代表：湾流、黑潮、东澳大利亚暖流。`,
+  cold:`<strong>寒流</strong>：水温低于流经海区。沿大陆西岸（大洋东岸）向低纬度流动。降温减湿：使沿岸气候凉爽干燥。沿岸常有上升流带来营养盐，形成大渔场。`,
+  fishing:`<strong>世界著名渔场</strong>：①北海道渔场（黑潮+亲潮）②纽芬兰渔场（湾流+拉布拉多寒流）③北海渔场（北大西洋暖流）④秘鲁渔场（秘鲁寒流上升流，世界最大）。成因：寒暖交汇或上升流带来营养盐→浮游生物→鱼类。`,
+  climate:`<strong>洋流对气候</strong>：①北大西洋暖流→西欧温带海洋性气候（同纬度最温暖）②秘鲁寒流→智利沙漠（南美太平洋沿岸）③加那利寒流→撒哈拉沿岸更干④本格拉寒流→纳米布沙漠。`,
+  thermohaline:`<strong>热盐环流</strong>（大洋传送带）：表层暖流在高纬度冷却下沉（北大西洋深水形成区）→深层冷水绕行全球→上涌→表层暖流返回。周期约1000年。是全球气候调节系统的关键。`
+};
+document.getElementById('kp-sel').addEventListener('change', e=>{
+  const el = document.getElementById('kp-overlay');
+  document.getElementById('kp-body').innerHTML = KP_DOCS[e.target.value]||'';
+  el.hidden = false;
+});
+
+// ── Three.js ──────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setClearColor(0x050811,1);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
+labelRenderer.domElement.style.cssText='position:absolute;top:0;left:0;pointer-events:none;';
+canvas.parentElement.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45,2,0.1,100);
+camera.position.set(0,1.5,5.5);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping=true; controls.dampingFactor=0.05;
+controls.minDistance=2.5; controls.maxDistance=14;
+
+scene.add(new THREE.AmbientLight(0xffffff,0.6));
+scene.add(Object.assign(new THREE.DirectionalLight(0xfff5e0,1.5), {position: new THREE.Vector3(5,3,5)}));
+
+const EARTH_R = 1.5;
+const earthGroup = new THREE.Group();
+scene.add(earthGroup);
+
+const earthMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(EARTH_R,64,48),
+  new THREE.MeshPhongMaterial({color:0x0d2040, specular:0x102040, shininess:30})
+);
+earthGroup.add(earthMesh);
+const loader = new THREE.TextureLoader();
+loader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/earth_atmos_2048.jpg',
+  t=>{earthMesh.material.map=t;earthMesh.material.needsUpdate=true;});
+
+// Helper: convert (lon, lat) degrees → 3D point on sphere radius r
+const DEG = Math.PI/180;
+function ll2xyz(lon, lat, r){
+  const phi=lat*DEG, theta=lon*DEG;
+  return new THREE.Vector3(r*Math.cos(phi)*Math.cos(theta), r*Math.sin(phi), r*Math.cos(phi)*Math.sin(theta));
+}
+
+// ── Current path definitions ──────────────────────────────────────────────────
+// Each current: {name, type:'warm'|'cold', points:[[lon,lat],...], label:[lon,lat]}
+const CURRENTS = [
+  // === NORTH PACIFIC ===
+  {name:'北赤道暖流', type:'warm', pts:[[-160,15],[-140,14],[-120,13],[-110,12],[-100,10],[140,10],[160,12],[180,13],[-160,15]]},
+  {name:'黑潮（日本暖流）', type:'warm', pts:[[125,20],[130,28],[135,35],[140,42],[145,48]]},
+  {name:'北太平洋暖流', type:'warm', pts:[[145,48],[160,48],[180,48],[-160,48],[-140,46],[-130,44],[-125,42]]},
+  {name:'加利福尼亚寒流', type:'cold', pts:[[-125,42],[-120,38],[-118,30],[-115,22],[-110,15]]},
+  {name:'千岛寒流（亲潮）', type:'cold', pts:[[155,55],[150,50],[145,45],[140,38],[135,33]]},
+
+  // === NORTH ATLANTIC ===
+  {name:'北赤道暖流(大)', type:'warm', pts:[[-20,12],[-30,12],[-45,13],[-60,15],[-65,18],[-70,22],[-75,26]]},
+  {name:'墨西哥湾流/北大西洋暖流', type:'warm', pts:[[-75,26],[-72,32],[-65,40],[-55,45],[-40,50],[-20,52],[-5,54],[0,55],[5,57],[10,60]]},
+  {name:'加那利寒流', type:'cold', pts:[[0,55],[-5,50],[-10,40],[-15,30],[-18,22],[-20,14]]},
+  {name:'拉布拉多寒流', type:'cold', pts:[[-55,60],[-58,55],[-60,50],[-65,45],[-70,40],[-72,35]]},
+
+  // === SOUTH PACIFIC ===
+  {name:'南赤道暖流(太)', type:'warm', pts:[[180,5],[160,5],[140,5],[120,5],[100,5],[80,5],[-100,5],[-80,5],[-70,5]]},
+  {name:'秘鲁寒流', type:'cold', pts:[[-70,5],[-75,12],[-78,20],[-72,35],[-70,42]]},
+  {name:'东澳大利亚暖流', type:'warm', pts:[[155,15],[155,25],[154,35],[152,42],[148,48]]},
+  {name:'西风漂流(南)', type:'cold', pts:[[148,48],[160,50],[180,52],[-160,52],[-140,52],[-120,52],[-100,52],[-80,52],[-60,52],[-40,52],[-20,52],[0,52],[20,52],[40,52],[60,52],[80,52],[100,52],[120,52],[140,52],[148,48]]},
+
+  // === SOUTH ATLANTIC ===
+  {name:'南赤道暖流(大)', type:'warm', pts:[[-10,5],[-20,5],[-30,5],[-40,5],[-50,5],[0,5],[20,3]]},
+  {name:'巴西暖流', type:'warm', pts:[[-40,5],[-45,15],[-50,25],[-52,35],[-55,45]]},
+  {name:'本格拉寒流', type:'cold', pts:[[15,-35],[14,-25],[13,-15],[12,-5],[10,5]]},
+  {name:'加那利寒流(南)', type:'cold', pts:[[20,5],[15,-5],[13,-15],[14,-25],[15,-35]]},
+
+  // === INDIAN OCEAN ===
+  {name:'南赤道暖流(印)', type:'warm', pts:[[100,-10],[80,-10],[60,-10],[50,-8],[45,-5],[40,-2]]},
+  {name:'莫桑比克暖流', type:'warm', pts:[[40,-2],[38,-10],[36,-20],[34,-30],[30,-40]]},
+  {name:'西澳大利亚寒流', type:'cold', pts:[[110,-35],[108,-25],[106,-15],[105,-5],[100,0]]},
+];
+
+const FISHING_GROUNDS = [
+  {name:'北海道渔场', lon:145, lat:44},
+  {name:'秘鲁渔场', lon:-80, lat:-15},
+  {name:'纽芬兰渔场', lon:-52, lat:46},
+  {name:'北海渔场', lon:3, lat:56},
+];
+
+// Groups
+const warmGroup = new THREE.Group(); earthGroup.add(warmGroup);
+const coldGroup = new THREE.Group(); earthGroup.add(coldGroup);
+const fishingGroup = new THREE.Group(); earthGroup.add(fishingGroup);
+const labelGroup = new THREE.Group(); earthGroup.add(labelGroup);
+
+// ── Build static geometry ──────────────────────────────────────────────────────
+const CURVE_R = EARTH_R + 0.018;
+
+// Animated particles along currents
+const particles = [];
+
+CURRENTS.forEach(cur=>{
+  const col = cur.type==='warm' ? 0xe85d4a : 0x6db3d9;
+  const grp = cur.type==='warm' ? warmGroup : coldGroup;
+
+  // Convert waypoints to CatmullRom curve
+  const pts3d = cur.pts.map(([lon,lat])=>ll2xyz(lon,lat,CURVE_R));
+  // Add first point at end for closed hint
+  const curve = new THREE.CatmullRomCurve3(pts3d, false, 'catmullrom', 0.5);
+  const curvePts = curve.getPoints(120);
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(curvePts),
+    new THREE.LineBasicMaterial({color:col, transparent:true, opacity:0.75})
+  );
+  grp.add(line);
+
+  // Arrow tip at end
+  if(pts3d.length >= 2){
+    const tip = pts3d[pts3d.length-1];
+    const before = pts3d[pts3d.length-2];
+    const dir = tip.clone().sub(before).normalize();
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(0.022,0.065,8),
+      new THREE.MeshBasicMaterial({color:col})
+    );
+    cone.position.copy(tip);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+    grp.add(cone);
+  }
+
+  // Animated particle
+  const partGeo = new THREE.SphereGeometry(0.025,8,6);
+  const partMat = new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.95});
+  const part = new THREE.Mesh(partGeo, partMat);
+  grp.add(part);
+  particles.push({mesh:part, curve, t:Math.random(), speed:(cur.type==='warm'?0.025:0.018)});
+});
+
+// Fishing grounds
+FISHING_GROUNDS.forEach(fg=>{
+  const pos = ll2xyz(fg.lon, fg.lat, CURVE_R+0.02);
+  const dot = new THREE.Mesh(
+    new THREE.SphereGeometry(0.04,12,8),
+    new THREE.MeshBasicMaterial({color:0xf4a853})
+  );
+  dot.position.copy(pos);
+  fishingGroup.add(dot);
+
+  const div = document.createElement('div');
+  div.style.cssText='font-family:monospace;font-size:10px;color:#f4a853;white-space:nowrap;background:rgba(7,10,19,.8);padding:2px 5px;border-radius:2px;';
+  div.textContent=fg.name;
+  const lbl = new CSS2DObject(div);
+  lbl.position.copy(pos.clone().multiplyScalar(1.05));
+  fishingGroup.add(lbl);
+});
+
+// Current name labels (sparse)
+const labeledCurrents = ['黑潮（日本暖流）','墨西哥湾流/北大西洋暖流','秘鲁寒流','西风漂流(南)','千岛寒流（亲潮）'];
+CURRENTS.filter(c=>labeledCurrents.includes(c.name)).forEach(cur=>{
+  const mid = cur.pts[Math.floor(cur.pts.length/2)];
+  const pos = ll2xyz(mid[0], mid[1], CURVE_R+0.05);
+  const div = document.createElement('div');
+  const col = cur.type==='warm'?'#e85d4a':'#6db3d9';
+  div.style.cssText=`font-family:monospace;font-size:10px;color:${col};white-space:nowrap;background:rgba(7,10,19,.75);padding:2px 5px;border-radius:2px;`;
+  div.textContent=cur.name.replace('(南)','').replace('(大)','').replace('(太)','').replace('(印)','');
+  const lbl = new CSS2DObject(div);
+  lbl.position.copy(pos);
+  labelGroup.add(lbl);
+});
+
+// ── Layer toggles ─────────────────────────────────────────────────────────────
+let animateParticles = true;
+document.getElementById('lyr-warm').addEventListener('change',e=>warmGroup.visible=e.target.checked);
+document.getElementById('lyr-cold').addEventListener('change',e=>coldGroup.visible=e.target.checked);
+document.getElementById('lyr-fishing').addEventListener('change',e=>fishingGroup.visible=e.target.checked);
+document.getElementById('lyr-labels').addEventListener('change',e=>labelGroup.visible=e.target.checked);
+document.getElementById('lyr-animate').addEventListener('change',e=>{ animateParticles=e.target.checked; });
+
+// ── Resize ─────────────────────────────────────────────────────────────────────
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  renderer.setSize(w,h,false); labelRenderer.setSize(w,h);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+// ── Animate ────────────────────────────────────────────────────────────────────
+let last=0;
+function animate(t){
+  requestAnimationFrame(animate);
+  const dt=(t-last)/1000; last=t;
+  earthGroup.rotation.y += dt*0.015;
+  if(animateParticles){
+    particles.forEach(p=>{
+      p.t = (p.t + p.speed*dt) % 1;
+      const pos = p.curve.getPoint(p.t);
+      p.mesh.position.copy(pos);
+    });
+  }
+  controls.update();
+  renderer.render(scene,camera);
+  labelRenderer.render(scene,camera);
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
